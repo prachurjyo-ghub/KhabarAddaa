@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+
+
+<link rel="stylesheet" href="styles.css"/>
+
+</head>
+<body class="page profile-page">
+<!-- Top Navigation -->
+<header class="profile-header">
+<nav class="profile-header-nav">
+<div class="profile-brand">
+  <img src="mainlogo svg.svg" alt="Main Logo" class="profile-brand-logo" />
+</div>
+<div class="profile-header-links">
+<a class="profile-header-link" href="hmp.html">Home</a>
+<a class="profile-header-link" href="menu.html">Menu</a>
+<a class="profile-header-link" href="reserveform.html">Reservation</a>
+<a class="profile-header-link" href="hmp.html#about-us">About Us</a>
+</div>
+<div class="top-nav-auth">
+    <button data-auth-cta data-logout class="profile-logout-btn">
+                Logout
+            </button>
+    <a data-user-chip href="customerProfile.html" class="menu-user-chip hidden" aria-label="Profile">
+        <span class="material-symbols-outlined menu-user-chip-icon">account_circle</span>
+        <span data-user-chip-name class="menu-user-chip-name">Profile</span>
+    </a>
+</div>
+</nav>
+</header>
+<!-- Main Content Area -->
+<main class="profile-main">
+<!-- Page Content -->
+<div class="profile-content">
+<!-- Customer Header -->
+<section class="profile-hero">
+<div class="profile-hero-glow"></div>
+<div class="profile-hero-inner">
+<div class="profile-avatar-wrap">
+<img id="profile-avatar" class="profile-avatar" data-alt="portrait" referrerpolicy="no-referrer" decoding="async" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpEbVtghfiWjZMf0GSOBkt54jwwLzMMDZBrlHavl_XPMn4lEsNfkKl67maIIkqXLo8VmqzD9T2MSZLQi3ytgHM2kOnAZqLhUTscE1VRPhDQLekIYYyjYASSPd2YFkIEnLCd17W3WOh-nqM0zGDOpu4u4e3jOiHHIx0RMclWbCWlEoKqnYfWEiK1Z-FdT9jvw6uB3n3jGrNIQVoVs85N-0zlH6h8deVYo09vlgjNQwuCAVUdJt-8CnU9WuZNFC0hUWOaQ_cw-RjFSc"/>
+
+</div>
+<div class="profile-hero-meta">
+<div>
+<h2 id="profile-name" class="profile-name"></h2>
+
+</div>
+<div class="profile-stat-grid">
+<div class="profile-stat-card">
+<p class="profile-stat-label">Total Orders</p>
+<p id="profile-total-orders" class="profile-stat-value">42</p>
+</div>
+<div class="profile-stat-card">
+<p class="profile-stat-label">Total Spend</p>
+<p id="profile-total-spend" class="profile-stat-value">৳1,245.50</p>
+</div>
+<div class="profile-stat-card">
+<p class="profile-stat-label">Last Order</p>
+<p id="profile-last-order" class="profile-stat-value">Oct 22, 2026</p>
+</div>
+</div>
+</div>
+<div class="profile-hero-actions">
+<button id="profile-edit-btn" class="profile-edit-btn">
+<span class="material-symbols-outlined">edit</span> Edit Profile
+                        </button>
+</div>
+</div>
+</section>
+<!-- Bento Grid Content -->
+<div class="profile-grid">
+<!-- Contact Info Card -->
+<div class="profile-col-info">
+<div class="profile-card profile-contact-card">
+<h3 class="profile-card-title">
+<span class="material-symbols-outlined profile-title-icon">contact_page</span>
+                            Contact Info
+                        </h3>
+<div class="profile-contact-list">
+<div class="profile-contact-row">
+<div class="profile-contact-icon-wrap">
+<span class="material-symbols-outlined">alternate_email</span>
+</div>
+<div>
+<p class="profile-contact-label">Email</p>
+<p id="profile-email" class="profile-contact-value">julianne.m@example.com</p>
+</div>
+</div>
+<div class="profile-contact-row">
+<div class="profile-contact-icon-wrap">
+<span class="material-symbols-outlined">call</span>
+</div>
+<div>
+<p class="profile-contact-label">Phone</p>
+<p id="profile-phone" class="profile-contact-value">+1 (555) 012-3456</p>
+</div>
+</div>
+<div class="profile-contact-row">
+<div class="profile-contact-icon-wrap">
+<span class="material-symbols-outlined">location_on</span>
+</div>
+<div>
+<p class="profile-contact-label">Primary Address</p>
+<p id="profile-address" class="profile-contact-value profile-contact-address">742 Evergreen Terrace, <br/>Springfield, IL 62704</p>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<!-- Order History Table -->
+<div class="profile-col-main">
+<div class="profile-card profile-table-card">
+<div class="profile-table-head">
+<h3 class="profile-card-title">
+<span class="material-symbols-outlined profile-title-icon">history</span>
+                                Order History
+                            </h3>
+<button class="profile-head-action">Export Report</button>
+</div>
+<div class="profile-table-wrap">
+<table class="profile-table">
+<thead>
+<tr>
+<th>Order ID</th>
+<th>Date</th>
+<th>Total</th>
+<th>Status</th>
+<th class="profile-th-right">Action</th>
+</tr>
+</thead>
+<tbody id="profile-orders-tbody" class="profile-orders-tbody">
+<tr class="profile-orders-row">
+<td class="profile-order-cell profile-order-id-cell">#ORD-1001</td>
+<td class="profile-order-cell profile-order-date-cell">Oct 22, 2026</td>
+<td class="profile-order-cell profile-order-total-cell">৳128.40</td>
+<td class="profile-order-cell">
+<span class="profile-status-badge profile-status-badge--completed">Completed</span>
+</td>
+<td class="profile-order-cell profile-order-action-cell">
+<a class="profile-view-link" href="#">View Details</a>
+</td>
+</tr>
+<tr class="profile-orders-row">
+<td class="profile-order-cell profile-order-id-cell">#ORD-0985</td>
+<td class="profile-order-cell profile-order-date-cell">Oct 08, 2026</td>
+<td class="profile-order-cell profile-order-total-cell">৳95.20</td>
+<td class="profile-order-cell">
+<span class="profile-status-badge profile-status-badge--completed">Completed</span>
+</td>
+<td class="profile-order-cell profile-order-action-cell">
+<a class="profile-view-link" href="#">View Details</a>
+</td>
+</tr>
+<tr class="profile-orders-row">
+<td class="profile-order-cell profile-order-id-cell">#ORD-0942</td>
+<td class="profile-order-cell profile-order-date-cell">Sep 24, 2026</td>
+<td class="profile-order-cell profile-order-total-cell">৳210.15</td>
+<td class="profile-order-cell">
+<span class="profile-status-badge profile-status-badge--preparing">Preparing</span>
+</td>
+<td class="profile-order-cell profile-order-action-cell">
+<a class="profile-view-link" href="#">View Details</a>
+</td>
+</tr>
+<tr class="profile-orders-row">
+<td class="profile-order-cell profile-order-id-cell">#ORD-0911</td>
+<td class="profile-order-cell profile-order-date-cell">Sep 10, 2026</td>
+<td class="profile-order-cell profile-order-total-cell">৳45.00</td>
+<td class="profile-order-cell">
+<span class="profile-status-badge profile-status-badge--completed">Completed</span>
+</td>
+<td class="profile-order-cell profile-order-action-cell">
+<a class="profile-view-link" href="#">View Details</a>
+</td>
+</tr>
+<tr class="profile-orders-row">
+<td class="profile-order-cell profile-order-id-cell">#ORD-0876</td>
+<td class="profile-order-cell profile-order-date-cell">Aug 27, 2026</td>
+<td class="profile-order-cell profile-order-total-cell">৳182.30</td>
+<td class="profile-order-cell">
+<span class="profile-status-badge profile-status-badge--completed">Completed</span>
+</td>
+<td class="profile-order-cell profile-order-action-cell">
+<a class="profile-view-link" href="#">View Details</a>
+</td>
+</tr>
+<tr class="profile-orders-row">
+<td class="profile-order-cell profile-order-id-cell">#ORD-0854</td>
+<td class="profile-order-cell profile-order-date-cell">Aug 13, 2026</td>
+<td class="profile-order-cell profile-order-total-cell">৳89.00</td>
+<td class="profile-order-cell">
+<span class="profile-status-badge profile-status-badge--cancelled">Cancelled</span>
+</td>
+<td class="profile-order-cell profile-order-action-cell">
+<a class="profile-view-link" href="#">View Details</a>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="profile-table-footer">
+<p class="profile-table-footer-note">Showing 6 of 42 orders</p>
+<div class="profile-pagination">
+<button class="profile-page-btn">
+<span class="material-symbols-outlined profile-page-icon">chevron_left</span>
+</button>
+<button class="profile-page-btn profile-page-btn-active">1</button>
+<button class="profile-page-btn profile-page-btn-number">2</button>
+<button class="profile-page-btn">
+<span class="material-symbols-outlined profile-page-icon">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Reservation History Table -->
+<div class="profile-col-main">
+<div class="profile-card profile-table-card">
+<div class="profile-table-head">
+<h3 class="profile-card-title">
+<span class="material-symbols-outlined profile-title-icon">event_available</span>
+                                Reservation History
+                            </h3>
+</div>
+<div class="profile-table-wrap">
+<table class="profile-table">
+<thead>
+<tr>
+<th>Reservation ID</th>
+<th>Date</th>
+<th>Time</th>
+<th>Guests</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="profile-reservations-tbody" class="profile-orders-tbody">
+<tr class="profile-orders-row">
+<td class="profile-order-cell profile-order-date-cell" colspan="5">Loading reservations...</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Edit Profile Modal -->
+<div id="profile-edit-modal" class="hidden profile-edit-modal">
+  <div class="profile-edit-modal-card">
+    <div class="profile-edit-modal-head">
+      <h3 class="profile-edit-modal-title">Edit Profile</h3>
+      <button id="profile-edit-close" type="button" class="profile-edit-modal-close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form id="profile-edit-form" class="profile-edit-form">
+      <input name="firstName" class="profile-edit-input" placeholder="First Name" />
+      <input name="lastName" class="profile-edit-input" placeholder="Last Name" />
+      <input name="email" type="email" class="profile-edit-input profile-edit-input--wide" placeholder="Email" />
+      <input name="phone" class="profile-edit-input" placeholder="Phone" />
+      <input name="address" class="profile-edit-input" placeholder="Address" />
+      <div class="profile-edit-actions">
+        <button id="profile-edit-cancel" type="button" class="profile-edit-cancel-btn">Cancel</button>
+        <button type="submit" class="profile-edit-save-btn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- Order Details Modal -->
+<div id="profile-order-details-modal" class="hidden profile-edit-modal">
+  <div class="profile-edit-modal-card order-details-modal-card">
+    <div class="profile-edit-modal-head">
+      <h3 class="profile-edit-modal-title">Order Details</h3>
+      <button id="profile-order-details-close" type="button" class="profile-edit-modal-close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="order-details-grid">
+      <div class="order-details-row">
+        <span class="order-details-label">Order ID</span>
+        <span id="profile-order-details-id" class="order-details-value">-</span>
+      </div>
+      <div class="order-details-row">
+        <span class="order-details-label">Status</span>
+        <span id="profile-order-details-status" class="order-details-value">-</span>
+      </div>
+      <div class="order-details-row">
+        <span class="order-details-label">Created</span>
+        <span id="profile-order-details-date" class="order-details-value">-</span>
+      </div>
+      <div class="order-details-row">
+        <span class="order-details-label">Order Type</span>
+        <span id="profile-order-details-type" class="order-details-value">-</span>
+      </div>
+      <div class="order-details-row">
+        <span class="order-details-label">Phone</span>
+        <span id="profile-order-details-phone" class="order-details-value">-</span>
+      </div>
+      <div class="order-details-row">
+        <span class="order-details-label">Address</span>
+        <span id="profile-order-details-address" class="order-details-value">-</span>
+      </div>
+      <div class="order-details-row order-details-row-total">
+        <span class="order-details-label">Total</span>
+        <span id="profile-order-details-total" class="order-details-value">৳0.00</span>
+      </div>
+      <div class="order-details-items-block">
+        <h4 class="order-details-items-title">Items</h4>
+        <div id="profile-order-details-items" class="order-details-items-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Footer -->
+<footer class="profile-footer">
+<p class="profile-footer-copy">KhabarAdda Dashboard © 2026</p>
+</footer>
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<!-- App -->
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+<!-- Bottom Nav Bar (Mobile Only) -->
+<nav data-customer-mobile-nav class="hidden customer-mobile-nav profile-mobile-nav">
+<div class="customer-mobile-nav-inner">
+<a class="customer-mobile-nav-link" href="hmp.html">
+<span class="material-symbols-outlined">home</span>
+<span class="customer-mobile-nav-label">Home</span>
+</a>
+<a class="customer-mobile-nav-link" href="menu.html">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="customer-mobile-nav-label">Menu</span>
+</a>
+<a class="customer-mobile-nav-link" href="orderCheckout.html">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="customer-mobile-nav-label">Cart</span>
+</a>
+<a class="customer-mobile-nav-link customer-mobile-nav-link-active" href="customerProfile.html">
+<span class="material-symbols-outlined">person</span>
+<span class="customer-mobile-nav-label">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

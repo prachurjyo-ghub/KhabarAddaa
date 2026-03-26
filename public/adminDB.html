@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>KhabarAdda Admin - Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+
+
+<link rel="stylesheet" href="styles.css"/>
+
+</head>
+<body class="page page-admin page-dashboard">
+<!-- Mobile Top Bar -->
+<div class="admin-mobile-topbar">
+  <h1 class="admin-mobile-topbar-title">Dashboard</h1>
+  <div class="admin-mobile-topbar-actions">
+  <div class="relative" data-admin-notif-root>
+    <button type="button" data-admin-notif-toggle class="admin-icon-btn">
+      <span class="material-symbols-outlined admin-icon-btn-icon">notifications</span>
+      <span data-admin-notif-count class="admin-notif-badge">0</span>
+    </button>
+    <div data-admin-notif-panel class="hidden admin-notif-panel admin-notif-panel-mobile">
+      <div class="admin-notif-panel-title">Latest Notifications</div>
+      <div data-admin-notif-list class="admin-notif-panel-list"></div>
+    </div>
+  </div>
+  <a data-logout href="#" class="admin-icon-btn">
+    <span class="material-symbols-outlined admin-icon-btn-icon">logout</span>
+  </a>
+  </div>
+</div>
+<!-- SideNavBar (Authority Source: JSON) -->
+<aside class="admin-sidebar">
+<div class="admin-sidebar-inner">
+<div class="admin-sidebar-brand">
+  <img src="mainlogo svg.svg" alt="Main Logo" class="admin-sidebar-logo" />
+</div>
+
+<nav class="admin-sidebar-nav">
+<!-- Active Item: Dashboard -->
+<a class="admin-nav-link admin-nav-link-active" href="adminDB.html">
+<span class="material-symbols-outlined admin-nav-icon-fill" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="admin-nav-label">Dashboard</span>
+</a>
+<a class="admin-nav-link" href="menuMan.html">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="admin-nav-label">Menu Management</span>
+</a>
+<a class="admin-nav-link" href="orderMan.html">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="admin-nav-label">Orders</span>
+</a>
+<a class="admin-nav-link" href="reserveMan.html">
+<span class="material-symbols-outlined">event_seat</span>
+<span class="admin-nav-label">Reservations</span>
+</a>
+</nav>
+<div class="admin-sidebar-footer">
+
+<a data-logout class="admin-nav-link" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="admin-nav-label">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="admin-main dashboard-main">
+<!-- Header Section -->
+<header class="admin-dashboard-header">
+<div class="admin-dashboard-header-text">
+<h1 class="admin-dashboard-title">Dashboard Overview</h1>
+<p class="admin-dashboard-subtitle">Welcome back, service is currently <span class="admin-dashboard-live">Live</span>.</p>
+</div>
+<div class="admin-dashboard-header-tools">
+<div class="admin-date-pill">
+<span class="material-symbols-outlined admin-date-pill-icon">calendar_today</span>
+                    <span id="admin-today-date">Oct 24, 2026</span>
+                </div>
+<div class="relative" data-admin-notif-root>
+  <button type="button" data-admin-notif-toggle class="admin-notif-toggle-desktop">
+    <span class="material-symbols-outlined">notifications</span>
+    <span data-admin-notif-count class="admin-notif-badge">0</span>
+  </button>
+  <div data-admin-notif-panel class="hidden admin-notif-panel admin-notif-panel-desktop">
+    <div class="admin-notif-panel-title">Latest Notifications</div>
+    <div data-admin-notif-list class="admin-notif-panel-list"></div>
+  </div>
+</div>
+</div>
+</header>
+<!-- Bento Grid: Top Cards -->
+<section class="admin-stats-grid">
+<!-- Card 1: Total Orders -->
+<div class="admin-stat-card">
+<div class="admin-stat-card-top">
+<div class="admin-stat-icon-wrap admin-stat-icon-wrap-primary">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<span class="admin-stat-card-tag">Daily</span>
+</div>
+<h3 class="admin-stat-value"><span id="admin-total-orders">0</span></h3>
+<p class="admin-stat-label">Total Orders</p>
+</div>
+<!-- Card 2: Total Reservations -->
+<div class="admin-stat-card">
+<div class="admin-stat-card-top">
+<div class="admin-stat-icon-wrap admin-stat-icon-wrap-tertiary">
+<span class="material-symbols-outlined">event_seat</span>
+</div>
+<span class="admin-stat-card-tag">Remaining</span>
+</div>
+<h3 class="admin-stat-value"><span id="admin-total-reservations">0</span></h3>
+<p class="admin-stat-label">Total Reservations</p>
+</div>
+<!-- Card 3: Menu Items -->
+<div class="admin-stat-card">
+<div class="admin-stat-card-top">
+<div class="admin-stat-icon-wrap admin-stat-icon-wrap-secondary">
+<span class="material-symbols-outlined">restaurant_menu</span>
+</div>
+</div>
+<h3 class="admin-stat-value"><span id="admin-total-menu-items">0</span></h3>
+<p class="admin-stat-label">Total Menu Items</p>
+</div>
+<!-- Card 4: Pending Orders (Priority) -->
+<div class="admin-stat-card admin-stat-card--highlight">
+<div class="admin-stat-card-highlight-bg"></div>
+<div class="admin-stat-card-top">
+<div class="admin-stat-icon-wrap admin-stat-icon-wrap-on-white">
+<span class="material-symbols-outlined admin-nav-icon-fill" style="font-variation-settings: 'FILL' 1;">timer</span>
+</div>
+<span class="admin-stat-card-tag admin-stat-card-tag-on-white">Active</span>
+</div>
+<h3 class="admin-stat-value admin-stat-value-on-primary"><span id="admin-pending-orders">0</span></h3>
+<p class="admin-stat-label admin-stat-label-on-primary">Pending Orders</p>
+</div>
+</section>
+<!-- Main Tables Section -->
+<div class="admin-dashboard-cols">
+<!-- Recent Orders Table (Asymmetric Wide) -->
+<div class="admin-orders-col">
+<div class="admin-section-head">
+<h2 class="admin-section-title">Recent Orders</h2>
+<button class="admin-section-link" type="button">View All</button>
+</div>
+<div class="admin-table-outer">
+<div class="admin-table-inner">
+<table class="admin-table">
+<thead>
+<tr class="admin-table-head-row">
+<th class="admin-th">Order ID</th>
+<th class="admin-th">Customer</th>
+<th class="admin-th">Total</th>
+<th class="admin-th">Status</th>
+<th class="admin-th admin-th-right">Action</th>
+</tr>
+</thead>
+<tbody id="admin-recent-orders-body" class="admin-tbody-divided"></tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Recent Reservations (Focused Sidebar Column) -->
+<div class="admin-reservations-col">
+<div class="admin-section-head">
+<h2 class="admin-section-title">Reservations</h2>
+<span class="admin-section-meta">Next 2 Hours</span>
+</div>
+<div class="admin-reservations-list">
+<div id="admin-recent-reservations-body"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar for Mobile (Authority Source: JSON) -->
+<nav class="customer-mobile-nav admin-bottom-nav">
+<div class="customer-mobile-nav-inner">
+<a class="customer-mobile-nav-link customer-mobile-nav-link-active" href="adminDB.html">
+<span class="material-symbols-outlined admin-nav-icon-fill" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="customer-mobile-nav-label">Dashboard</span>
+</a>
+<a class="customer-mobile-nav-link" href="menuMan.html">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="customer-mobile-nav-label">Menu</span>
+</a>
+<a class="customer-mobile-nav-link" href="orderMan.html">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="customer-mobile-nav-label">Orders</span>
+</a>
+<a class="customer-mobile-nav-link" href="reserveMan.html">
+<span class="material-symbols-outlined">event_seat</span>
+<span class="customer-mobile-nav-label">Reservations</span>
+</a>
+</div>
+</nav>
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<!-- App -->
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

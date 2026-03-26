@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Checkout | KhabarAdda</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+
+
+<link rel="stylesheet" href="styles.css"/>
+
+</head>
+<body class="page checkout-page">
+<nav class="checkout-nav">
+<div class="checkout-nav-inner">
+<div class="checkout-nav-brand">
+  <img src="mainlogo svg.svg" alt="Main Logo" />
+</div>
+<div class="checkout-nav-links">
+<a class="checkout-nav-link" href="hmp.html">Home</a>
+<a class="checkout-nav-link" href="hmp.html#about-us">About Us</a>
+<a class="checkout-nav-link" href="menu.html">Menu</a>
+<a class="checkout-nav-link" href="reserveform.html">Reservation</a>
+</div>
+<div class="top-nav-auth">
+    <button data-auth-cta class="checkout-nav-cta" type="button" onclick="location.href='customerLogin.html'">
+                    Login
+                </button>
+    <a data-user-chip href="customerProfile.html" class="menu-user-chip hidden" aria-label="Profile">
+        <span class="material-symbols-outlined menu-user-chip-icon">account_circle</span>
+        <span data-user-chip-name class="menu-user-chip-name">Profile</span>
+    </a>
+</div>
+</div>
+</nav>
+<main class="checkout-main">
+<div class="checkout-hero-block">
+<span class="checkout-hero-kicker">Secure Checkout</span>
+<h1 class="checkout-hero-title">Complete Your Order</h1>
+</div>
+<div class="checkout-layout">
+<div class="checkout-col-form">
+<section class="checkout-section">
+<h2 class="checkout-section-title">
+<span class="checkout-step-badge">1</span>
+                        Order Type
+                    </h2>
+<div class="checkout-type-toggle">
+<button class="checkout-order-type-btn checkout-order-type-btn--active"
+        type="button"
+        data-order-type="Delivery">Delivery</button>
+<button class="checkout-order-type-btn"
+        type="button"
+        data-order-type="Takeaway">Takeaway</button>
+<button class="checkout-order-type-btn"
+        type="button"
+        data-order-type="Dine-in">Dine-in</button>
+</div>
+<input type="hidden" id="order-type-input" name="orderType" value="Delivery" />
+</section>
+<section class="checkout-section">
+<h2 class="checkout-section-title">
+<span class="checkout-step-badge">2</span>
+                        Delivery Details
+                    </h2>
+<form id="checkout-form" class="checkout-form-grid">
+<div class="checkout-field">
+<label class="checkout-field-label">Full Name</label>
+<input name="fullName" required class="checkout-text-input" placeholder="Julianne Moore" type="text"/>
+</div>
+<div class="checkout-field">
+<label class="checkout-field-label">Phone Number</label>
+<input name="phone" required class="checkout-text-input" placeholder="01XXXXXXXXX" type="tel"/>
+</div>
+<div class="checkout-field checkout-field--full">
+<label class="checkout-field-label">Delivery Address</label>
+<div class="checkout-field-icon-wrap">
+<input name="address" class="checkout-text-input" placeholder="Enter your street address" type="text"/>
+<span class="material-symbols-outlined">location_on</span>
+</div>
+</div>
+</form>
+</section>
+<section class="checkout-section">
+<h2 class="checkout-section-title">
+<span class="checkout-step-badge">3</span>
+                        Payment Method
+                    </h2>
+<div class="checkout-form-grid">
+<label class="payment-option payment-option--selected" data-payment-option>
+<input checked="" class="hidden" name="payment" type="radio" value="card"/>
+<div class="checkout-payment-row">
+<span class="material-symbols-outlined payment-icon">credit_card</span>
+<div>
+<p class="checkout-payment-title">Credit Card</p>
+<p class="checkout-payment-desc">Visa, Mastercard, Amex</p>
+</div>
+</div>
+<span class="material-symbols-outlined payment-check" data-weight="fill">check_circle</span>
+</label>
+<label class="payment-option payment-option--unselected" data-payment-option>
+<input class="hidden" name="payment" type="radio" value="cod"/>
+<div class="checkout-payment-row">
+<span class="material-symbols-outlined payment-icon">payments</span>
+<div>
+<p class="checkout-payment-title">Cash on Delivery</p>
+<p class="checkout-payment-desc">Pay when food arrives</p>
+</div>
+</div>
+<span class="material-symbols-outlined payment-check" data-weight="fill">check_circle</span>
+</label>
+</div>
+</section>
+</div>
+<div class="checkout-summary-col">
+<div class="checkout-summary-card">
+<h3 class="checkout-summary-title">Order Summary</h3>
+<div id="order-items" class="checkout-order-items"></div>
+<div class="checkout-totals">
+<div class="checkout-total-row">
+<span>Subtotal</span>
+<span id="order-subtotal">৳0.00</span>
+</div>
+<div class="checkout-total-row">
+<span>Delivery Fee</span>
+<span class="checkout-delivery-free">Free</span>
+</div>
+<div class="checkout-total-main">
+<span class="checkout-total-label">Total</span>
+<div class="checkout-total-right">
+<span id="order-total" class="checkout-total-amount">৳0.00</span>
+<span class="checkout-total-meta checkout-total-meta-block">Inc. Taxes</span>
+</div>
+</div>
+</div>
+<button id="place-order-btn" class="checkout-place-btn checkout-place-btn--with-icon" type="button">
+                        Confirm &amp; Place Order
+                        <span class="material-symbols-outlined checkout-place-arrow">arrow_forward</span>
+</button>
+<p class="checkout-secure-note">
+<span class="material-symbols-outlined checkout-secure-icon">lock</span>
+                        Secure encrypted transaction
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<footer class="checkout-page-footer">
+<div class="checkout-page-footer-inner">
+<div class="checkout-footer-brand">
+  <img src="mainlogo svg.svg" alt="Main Logo" />
+</div>
+<div class="checkout-footer-links">
+<a class="checkout-footer-link" href="#">Privacy Policy</a>
+<a class="checkout-footer-link" href="#">Terms of Service</a>
+<a class="checkout-footer-link" href="#">Contact Us</a>
+<a class="checkout-footer-link" href="#">Press Kit</a>
+</div>
+<div class="checkout-footer-copy">
+                © 2026 KhabarAdda. All rights reserved.
+            </div>
+</div>
+</footer>
+<nav data-customer-mobile-nav class="customer-mobile-nav reservation-mobile-nav">
+<div class="customer-mobile-nav-inner">
+<a class="customer-mobile-nav-link" href="hmp.html">
+<span class="material-symbols-outlined">home</span>
+<span class="customer-mobile-nav-label">Home</span>
+</a>
+<a class="customer-mobile-nav-link" href="menu.html">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="customer-mobile-nav-label">Menu</span>
+</a>
+<a class="customer-mobile-nav-link customer-mobile-nav-link-active" href="orderCheckout.html">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="customer-mobile-nav-label">Cart</span>
+</a>
+<a class="customer-mobile-nav-link" href="reserveform.html">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="customer-mobile-nav-label">Reserve</span>
+</a>
+</div>
+</nav>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body></html>

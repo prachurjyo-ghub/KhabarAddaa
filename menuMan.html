@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Menu Management | KhabarAdda Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+
+
+<link rel="stylesheet" href="styles.css"/>
+
+</head>
+<body class="page page-admin page-menu-management">
+<!-- Mobile Top Bar -->
+<div class="admin-mobile-topbar">
+  <h1 class="admin-mobile-topbar-title">Menu Management</h1>
+  <div class="admin-mobile-topbar-actions">
+  <div class="relative" data-admin-notif-root>
+    <button type="button" data-admin-notif-toggle class="admin-icon-btn">
+      <span class="material-symbols-outlined admin-icon-btn-icon">notifications</span>
+      <span data-admin-notif-count class="admin-notif-badge">0</span>
+    </button>
+    <div data-admin-notif-panel class="hidden admin-notif-panel admin-notif-panel-mobile">
+      <div class="admin-notif-panel-title">Latest Notifications</div>
+      <div data-admin-notif-list class="admin-notif-panel-list"></div>
+    </div>
+  </div>
+  <a data-logout href="#" class="admin-icon-btn">
+    <span class="material-symbols-outlined admin-icon-btn-icon">logout</span>
+  </a>
+  </div>
+</div>
+<!-- SideNavBar -->
+<aside class="admin-sidebar">
+<div class="admin-sidebar-inner">
+<div class="admin-sidebar-brand">
+  <img src="mainlogo svg.svg" alt="Main Logo" class="admin-sidebar-logo" />
+</div>
+
+<nav class="admin-sidebar-nav">
+<a class="admin-nav-link" href="adminDB.html">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="admin-nav-label">Dashboard</span>
+</a>
+<!-- Active State: Menu Management -->
+<a class="admin-nav-link admin-nav-link-active" href="menuMan.html">
+<span class="material-symbols-outlined admin-nav-icon-fill" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+<span class="admin-nav-label">Menu Management</span>
+</a>
+<a class="admin-nav-link" href="orderMan.html">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="admin-nav-label">Orders</span>
+</a>
+<a class="admin-nav-link" href="reserveMan.html">
+<span class="material-symbols-outlined">event_seat</span>
+<span class="admin-nav-label">Reservations</span>
+</a>
+</nav>
+<div class="admin-sidebar-footer">
+
+<a data-logout class="admin-nav-link" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="admin-nav-label">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="admin-main menu-management-main">
+<!-- Header Section -->
+<header class="menu-management-header">
+<div>
+
+<h1 class="menu-management-brand-title">KhabarAdda</h1>
+<p class="menu-management-brand-subtitle">Refine your culinary offerings and seasonal delights.</p>
+</div>
+<div class="menu-management-header-tools">
+<div class="relative menu-management-notif-desktop" data-admin-notif-root>
+  <button type="button" data-admin-notif-toggle class="admin-notif-toggle-desktop menu-management-notif-btn">
+    <span class="material-symbols-outlined">notifications</span>
+    <span data-admin-notif-count class="admin-notif-badge">0</span>
+  </button>
+  <div data-admin-notif-panel class="hidden admin-notif-panel admin-notif-panel-desktop">
+    <div class="admin-notif-panel-title">Latest Notifications</div>
+    <div data-admin-notif-list class="admin-notif-panel-list"></div>
+  </div>
+</div>
+<button onclick="location.hash='add-menu-item-card'" type="button" class="menu-management-add-btn">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Add New Item
+            </button>
+</div>
+</header>
+<!-- Bento Grid Stats -->
+<section class="menu-management-stats-grid">
+<div class="menu-stat-card">
+<div class="menu-stat-card-top">
+<span class="menu-stat-icon-wrap menu-stat-icon-wrap--primary">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+</span>
+<span class="menu-stat-tag menu-stat-tag--tertiary">Total Items</span>
+</div>
+<div class="menu-stat-value">
+  <span id="admin-menu-total-items"></span>
+</div>
+</div>
+<div class="menu-stat-card">
+<div class="menu-stat-card-top">
+<span class="menu-stat-icon-wrap menu-stat-icon-wrap--green">
+<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+</span>
+<span class="menu-stat-tag menu-stat-tag--green">Active</span>
+</div>
+<div class="menu-stat-value">
+  <span id="admin-menu-active-items"></span>
+</div>
+</div>
+<div class="menu-stat-card">
+<div class="menu-stat-card-top">
+<span class="menu-stat-icon-wrap menu-stat-icon-wrap--yellow">
+<span class="material-symbols-outlined" data-icon="pending">pending</span>
+</span>
+<span class="menu-stat-tag menu-stat-tag--yellow">Inactive</span>
+</div>
+<div class="menu-stat-value">
+  <span id="admin-menu-inactive-items"></span>
+</div>
+</div>
+<div class="menu-stat-card">
+<div class="menu-stat-card-top">
+<span class="menu-stat-icon-wrap menu-stat-icon-wrap--blue">
+<span class="material-symbols-outlined" data-icon="category">category</span>
+</span>
+<span class="menu-stat-tag menu-stat-tag--blue">Categories</span>
+</div>
+<div class="menu-stat-value">
+  <span id="admin-menu-categories-count"></span>
+</div>
+</div>
+</section>
+<!-- Menu Table Section -->
+<section class="menu-inventory-section">
+<div class="menu-inventory-toolbar">
+<h2 class="menu-inventory-title">Menu Inventory</h2>
+<div class="menu-inventory-filters">
+<div class="menu-inventory-search-wrap">
+<input class="menu-inventory-search-input" placeholder="Search menu..." type="text"/>
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</div>
+<button type="button" class="menu-inventory-filter-btn">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+</button>
+</div>
+</div>
+<div class="menu-inventory-table-wrap">
+<table class="menu-inventory-table">
+<thead>
+<tr>
+<th>Image</th>
+<th>Item Name</th>
+<th>Category</th>
+<th>Price</th>
+<th>Status</th>
+<th class="menu-th-actions">Actions</th>
+</tr>
+</thead>
+<tbody id="menu-table-body" class="menu-inventory-tbody">
+</tbody>
+</table>
+</div>
+<div class="menu-inventory-footer">
+<span id="admin-menu-showing-label" class="menu-inventory-footer-label">Loading menu stats...</span>
+</div>
+</section>
+<!-- Add/Edit Item Form -->
+<section id="add-menu-item-card" class="menu-item-form-card">
+<!-- Decorative Gradient Flourish -->
+<div class="menu-item-form-flourish"></div>
+<div class="menu-item-form-head">
+<div>
+<h2 class="menu-item-form-title">Add Menu Item</h2>
+<p class="menu-item-form-subtitle">Items added here appear on customer menus</p>
+</div>
+<button type="button" class="menu-item-form-close">
+<span class="material-symbols-outlined menu-item-form-close-icon" data-icon="close">close</span>
+</button>
+</div>
+<form id="menu-item-form" class="menu-item-form-grid">
+<!-- Image Upload Section -->
+<div class="menu-item-form-col-image">
+<div class="menu-item-image-upload">
+<div class="menu-item-image-box">
+<img alt="Menu item preview" class="menu-item-preview-img" data-alt="Preview of menu item image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6X2czrdtjvG0e2dXxyUgfw6y_zhxIwL9bB337INT4jEDmUkZ0VJ53uhjDf-56IKTf_B-qZRD338vNZGDwwZ5qlYsL8NzDo0OvuN4t7b3Mv9kUlEhG_sp5DhzHJtsQ_924NJh4ML022RHu-5Z5-UwIlqvxjf7IFJsfZyF8rJLMrMQdFrSRX6ep5d4lNA3ud9oXQBMqkfk475fFebID73BNneshaRqjSZ_iLsEwA_WxCRjh_HtUdxY0UNktAYqM0lLCE3Fa1g_Anwg"/>
+<div class="menu-item-image-overlay">
+<span class="material-symbols-outlined" data-icon="cloud_upload">cloud_upload</span>
+<span>Change Image</span>
+</div>
+</div>
+</div>
+<div class="menu-form-field-spaced">
+<label class="menu-form-label">Image URL</label>
+<input name="image" class="menu-form-input menu-form-input--compact" placeholder="Optional override (auto image from Foods for known items)" type="url"/>
+</div>
+</div>
+<!-- Form Details -->
+<div class="menu-item-form-col-fields">
+<div class="menu-form-row-2">
+<div class="menu-form-col-span-2">
+<label class="menu-form-label">Item Name</label>
+<input name="name" class="menu-form-input menu-form-input--name" type="text" placeholder="e.g. Heritage Burger"/>
+</div>
+<div>
+<label class="menu-form-label">Category</label>
+<select name="category" class="menu-form-input">
+<option value="">Category</option>
+<option value="Starters">Starters</option>
+<option value="Main Course">Main Course</option>
+<option value="Desserts">Desserts</option>
+<option value="Drinks">Drinks</option>
+</select>
+</div>
+<div>
+<label class="menu-form-label">Price (৳)</label>
+<input name="price" class="menu-form-input menu-form-input--price" step="0.01" type="number" placeholder="0.00"/>
+</div>
+<div class="menu-form-col-span-2">
+<label class="menu-form-label">Description</label>
+<textarea name="description" class="menu-form-input menu-form-textarea" rows="4" placeholder="Short description used on customer menu."></textarea>
+</div>
+</div>
+<div class="menu-form-actions">
+<button class="menu-form-submit" type="submit">Save Item</button>
+<button class="menu-form-clear" type="button" onclick="document.getElementById('menu-item-form').reset()">Clear</button>
+</div>
+</div>
+</form>
+</section>
+</main>
+<!-- Bottom NavBar for Mobile -->
+<nav class="customer-mobile-nav admin-bottom-nav">
+<div class="customer-mobile-nav-inner">
+<a class="customer-mobile-nav-link" href="adminDB.html">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="customer-mobile-nav-label">Dashboard</span>
+</a>
+<a class="customer-mobile-nav-link customer-mobile-nav-link-active" href="menuMan.html">
+<span class="material-symbols-outlined admin-nav-icon-fill" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="customer-mobile-nav-label">Menu</span>
+</a>
+<a class="customer-mobile-nav-link" href="orderMan.html">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="customer-mobile-nav-label">Orders</span>
+</a>
+<a class="customer-mobile-nav-link" href="reserveMan.html">
+<span class="material-symbols-outlined">event_seat</span>
+<span class="customer-mobile-nav-label">Reservations</span>
+</a>
+</div>
+</nav>
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<!-- App -->
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
