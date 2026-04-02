@@ -1,24 +1,31 @@
 // Firebase (compat)
-// Config is loaded from firebase-config.js (gitignored). See firebase-config.example.js.
-const firebaseConfig =
-  typeof window !== "undefined" && window.__FIREBASE_CONFIG__
-    ? window.__FIREBASE_CONFIG__
-    : null;
-
+// On Firebase Hosting, include /__/firebase/init.js before this file (reserved URL — auto config).
+// For local file:// or servers without that URL, load firebase-config.js first (see firebase-config.example.js).
 if (typeof firebase === "undefined") {
   console.error(
     "Firebase SDK not loaded. Make sure firebase-*-compat scripts are included before app.js."
   );
-} else if (!firebaseConfig || !firebaseConfig.apiKey) {
-  console.error(
-    "Firebase config missing. Copy firebase-config.example.js to firebase-config.js and set your web app values."
-  );
 } else if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+  const cfg =
+    typeof window !== "undefined" && window.__FIREBASE_CONFIG__
+      ? window.__FIREBASE_CONFIG__
+      : null;
+  if (cfg && cfg.apiKey) {
+    firebase.initializeApp(cfg);
+  } else {
+    console.error(
+      "Firebase not initialized. On Hosting use /__/firebase/init.js before app.js; locally copy firebase-config.example.js to firebase-config.js or run firebase serve."
+    );
+  }
 }
 
-const auth = typeof firebase !== "undefined" ? firebase.auth() : null;
-const db = typeof firebase !== "undefined" ? firebase.firestore() : null;
+// Only call auth()/firestore() after initializeApp; otherwise the SDK throws and the rest of app.js never runs.
+let auth = null;
+let db = null;
+if (typeof firebase !== "undefined" && firebase.apps.length) {
+  auth = firebase.auth();
+  db = firebase.firestore();
+}
 
 // --- Global toast UI (top-centered, responsive) ---
 const TOAST_ROOT_ID = "app-toast-root";
@@ -265,6 +272,7 @@ function mapReservationsSnapshot(snap) {
 }
 
 async function fetchMenuItems() {
+  if (!db) return;
   const snap = await db.collection("menuItems").get();
   menuItemsCache = mapMenuItemsSnapshot(snap);
 }
@@ -857,6 +865,16 @@ async function initMenuManagementPage() {
 async function initPublicMenu(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
+
+  if (!db) {
+    container.innerHTML =
+      '<p class="public-menu-empty">Firebase did not initialize. On Hosting ensure /__/firebase/init.js is loaded before app.js; locally use firebase serve or firebase-config.js.</p>';
+    showToast("Firebase not ready. Check the browser console.", {
+      type: "error",
+      duration: 5000,
+    });
+    return;
+  }
 
   if (!menuItemsCache.length) {
     await fetchMenuItems();
