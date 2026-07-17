@@ -64,6 +64,17 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.local
+**/.env
+**/.env.local
+
+# Backend uploads (keep folder, ignore files)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Next.js
+**/.next/
+**/out/
 
 # Firebase client config (contains web API key; keep out of git for secret scanning)
 firebase-config.js

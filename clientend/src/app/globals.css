@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0c0c0c;
+  --on-background: #f2efe8;
+  --primary: #c5a059;
+  --primary-dark: #a8843f;
+  --primary-soft: rgba(197, 160, 89, 0.14);
+  --primary-fixed: #e8d5a8;
+  --secondary: #a39e96;
+  --on-surface-variant: #c8c2b8;
+  --outline: #c5a059;
+  --outline-variant: rgba(197, 160, 89, 0.28);
+  --surface: #141414;
+  --surface-warm: #1a1a1a;
+  --surface-container: #1c1c1c;
+  --surface-container-low: #121212;
+  --surface-container-high: #222222;
+  --error: #e85d5d;
+  --gold: #c5a059;
+  --gold-bright: #e0c078;
+  --ink: #f2efe8;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--on-background);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  border-color: var(--outline-variant);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--on-background);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--gold);
+  color: #121212;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes soft-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes gold-shimmer {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease both;
+}
+
+.animate-float {
+  animation: soft-float 5s ease-in-out infinite;
+}
+
+.animate-delay-1 {
+  animation-delay: 0.12s;
+}
+
+.animate-delay-2 {
+  animation-delay: 0.24s;
+}
+
+.animate-delay-3 {
+  animation-delay: 0.36s;
+}
+
+.text-gold-glow {
+  color: var(--gold-bright);
+  text-shadow:
+    0 0 18px rgba(197, 160, 89, 0.45),
+    0 0 42px rgba(197, 160, 89, 0.2);
+}
+
+.gold-border {
+  border: 1px solid rgba(197, 160, 89, 0.45);
+}
+
+.gold-frame {
+  border: 1px solid rgba(197, 160, 89, 0.42);
+  border-radius: 0.85rem;
+  background: linear-gradient(
+    180deg,
+    rgba(26, 26, 26, 0.95) 0%,
+    rgba(12, 12, 12, 0.98) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(197, 160, 89, 0.08),
+    0 0 18px rgba(197, 160, 89, 0.18),
+    0 0 36px rgba(197, 160, 89, 0.08),
+    inset 0 0 24px rgba(197, 160, 89, 0.03);
+  transition:
+    box-shadow 0.35s ease,
+    border-color 0.35s ease,
+    transform 0.35s ease;
+}
+
+.gold-frame:hover,
+.group:hover .gold-frame,
+a.gold-frame:hover,
+article.gold-frame:hover {
+  border-color: rgba(224, 192, 120, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(224, 192, 120, 0.22),
+    0 0 22px rgba(197, 160, 89, 0.42),
+    0 0 48px rgba(197, 160, 89, 0.22),
+    0 0 72px rgba(197, 160, 89, 0.1),
+    inset 0 0 28px rgba(197, 160, 89, 0.06);
+}
+
+input[type="date"],
+input[type="time"],
+select {
+  color-scheme: dark;
+}
+
+.hero-gold-lines {
+  background-image:
+    radial-gradient(
+      ellipse 50% 40% at 15% 10%,
+      rgba(197, 160, 89, 0.18),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 45% 35% at 85% 8%,
+      rgba(197, 160, 89, 0.14),
+      transparent 70%
+    );
+}
+
+.page-pad {
+  padding-bottom: 5.5rem;
+}
+
+@media (min-width: 768px) {
+  .page-pad {
+    padding-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-float {
+    animation: none !important;
+  }
+
+  .gold-frame {
+    transition: none;
+  }
+}
