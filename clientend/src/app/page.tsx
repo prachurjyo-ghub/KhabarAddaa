@@ -297,15 +297,15 @@ export default function HomePage() {
           <SectionTitle>Featured Menu</SectionTitle>
         </Reveal>
 
-        <Stagger className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className="mt-8 grid grid-cols-2 gap-3 md:mt-12 md:gap-6 lg:grid-cols-3">
           {featured.map((dish) => (
             <StaggerItem key={dish.id}>
               <MotionLinkHover>
                 <Link
                   href={dish.href}
-                  className="gold-frame group relative block overflow-hidden p-5 md:p-6"
+                  className="gold-frame group relative block overflow-hidden p-3 md:p-6"
                 >
-                  <div className="relative mx-auto aspect-square max-w-[240px]">
+                  <div className="relative mx-auto aspect-square max-w-[120px] md:max-w-[240px]">
                     <div className="absolute inset-0 overflow-hidden rounded-full border border-[var(--gold)]/30">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -315,7 +315,7 @@ export default function HomePage() {
                       />
                     </div>
                     <motion.span
-                      className="absolute bottom-3 right-3 rounded bg-[var(--gold)] px-2.5 py-1 text-xs font-bold text-[#121212]"
+                      className="absolute bottom-1.5 right-1.5 rounded bg-[var(--gold)] px-1.5 py-0.5 text-[10px] font-bold text-[#121212] md:bottom-3 md:right-3 md:px-2.5 md:py-1 md:text-xs"
                       initial={reduce ? false : { opacity: 0, y: 8 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
@@ -325,7 +325,7 @@ export default function HomePage() {
                     </motion.span>
                   </div>
                   <motion.h3
-                    className="mt-5 text-center font-[family-name:var(--font-display)] text-xl font-semibold text-white md:text-[1.35rem]"
+                    className="mt-3 text-center font-[family-name:var(--font-display)] text-sm font-semibold leading-tight text-white md:mt-5 md:text-[1.35rem]"
                     initial={reduce ? false : { opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -334,7 +334,7 @@ export default function HomePage() {
                     {dish.name}
                   </motion.h3>
                   <motion.p
-                    className="mt-2 text-center text-sm font-light leading-relaxed text-white/50"
+                    className="mt-2 hidden text-center text-sm font-light leading-relaxed text-white/50 md:block"
                     initial={reduce ? false : { opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
@@ -371,15 +371,15 @@ export default function HomePage() {
           <SectionTitle>Popular Dishes</SectionTitle>
         </Reveal>
 
-        <Stagger className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className="mt-8 grid grid-cols-2 gap-3 md:mt-12 md:gap-6 lg:grid-cols-3">
           {popular.map((dish) => (
             <StaggerItem key={dish.id}>
               <MotionLinkHover>
                 <Link
                   href={dish.href}
-                  className="gold-frame group flex h-full min-h-[380px] flex-col overflow-hidden"
+                  className="gold-frame group relative flex h-[210px] flex-col overflow-hidden md:h-auto md:min-h-[380px]"
                 >
-                  <div className="relative h-[240px] w-full shrink-0 overflow-hidden">
+                  <div className="relative h-[130px] w-full shrink-0 overflow-hidden md:h-[240px]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={dish.image}
@@ -387,22 +387,24 @@ export default function HomePage() {
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                    <p className="absolute inset-x-0 bottom-0 translate-y-2 p-4 text-sm font-light text-white/90 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                    <p className="absolute inset-x-0 bottom-0 hidden translate-y-2 p-4 text-sm font-light text-white/90 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 md:block">
                       {dish.description}
                     </p>
                   </div>
-                  <div className="flex flex-1 items-end justify-between gap-3 px-5 py-5 md:px-6 md:py-6">
-                    <div>
-                      <h3 className="font-medium text-white">{dish.name}</h3>
-                      <div className="mt-1.5">
+                  <div className="flex flex-1 items-end justify-between gap-2 px-2.5 py-2.5 md:gap-3 md:px-6 md:py-6">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-xs font-medium text-white md:text-base">
+                        {dish.name}
+                      </h3>
+                      <div className="mt-1 hidden md:mt-1.5 md:block">
                         <StarRow count={dish.rating ?? 5} />
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-[var(--gold)]">
+                    <div className="shrink-0 text-right">
+                      <p className="rounded bg-[var(--gold)] px-1.5 py-0.5 text-[11px] font-bold text-[#121212] md:rounded-none md:bg-transparent md:px-0 md:py-0 md:text-base md:font-semibold md:text-[var(--gold)]">
                         {formatBDT(dish.price)}
                       </p>
-                      <div className="mt-1.5 flex justify-end">
+                      <div className="mt-1.5 hidden justify-end md:flex">
                         <DietIcons dish={dish} />
                       </div>
                     </div>

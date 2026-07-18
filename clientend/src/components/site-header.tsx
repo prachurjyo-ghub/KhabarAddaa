@@ -84,7 +84,7 @@ export function SiteHeader({ transparent = false }: { transparent?: boolean }) {
 
         <div className="flex items-center gap-2">
           <Button asChild size="sm" variant="outline" className="relative border-[var(--gold)]/50">
-            <Link href="/checkout">
+            <Link href="/menu?cart=1">
               <FiShoppingBag className="h-4 w-4" />
               <span className="hidden sm:inline">Cart</span>
               <AnimatePresence>

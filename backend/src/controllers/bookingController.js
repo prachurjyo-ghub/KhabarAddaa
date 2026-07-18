@@ -317,6 +317,14 @@ async function deleteBooking(req, res) {
   return sendSuccess(res, null, "Deleted");
 }
 
+async function myBookings(req, res) {
+  const bookings = await Booking.find({ customerId: req.auth.user._id }).sort({
+    date: -1,
+    startMinutes: -1,
+  });
+  return sendSuccess(res, { bookings });
+}
+
 module.exports = {
   listTables,
   createTable,
@@ -324,6 +332,7 @@ module.exports = {
   deleteTable,
   publicAvailability,
   createPublicBooking,
+  myBookings,
   getWeeklySchedule,
   updateWeeklySchedule,
   listDateOverrides,

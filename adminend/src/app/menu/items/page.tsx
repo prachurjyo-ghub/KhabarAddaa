@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { FiArrowLeft, FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiArrowLeft, FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
 import { AdminShell } from "@/components/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,9 @@ type MenuItem = {
 
 type HomepageBadge = MenuItem["homepageBadge"];
 
+type SizeRow = { id: string; label: string; extra: string };
+type ToppingRow = { id: string; label: string; price: string };
+
 const emptyForm = {
   name: "",
   description: "",
@@ -54,19 +57,25 @@ const emptyForm = {
   price: "",
   image: "",
   isFeatured: false,
-  homepageBadge: "none" as HomepageBadge,
+  isChefSpecial: false,
+  homepageBadge: "none" as Exclude<HomepageBadge, "chef-special">,
   customizable: false,
-  sizesText: "",
-  toppingsText: "",
+  sizes: [] as SizeRow[],
+  toppings: [] as ToppingRow[],
   status: "In Stock" as MenuItem["status"],
   isActive: true,
 };
+
+function newRowId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
 
 export default function MenuItemsPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [form, setForm] = useState(emptyForm);
@@ -81,15 +90,8 @@ export default function MenuItemsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (statusFilter !== "all") params.set("status", statusFilter);
-      if (sort === "name") params.set("sort", "name");
-      if (sort === "price_asc") params.set("sort", "price_asc");
-      if (sort === "price_desc") params.set("sort", "price_desc");
-
       const [itemsData, catsData] = await Promise.all([
-        apiFetch<{ items: MenuItem[] }>(`/menu/items?${params}`),
+        apiFetch<{ items: MenuItem[] }>("/menu/items"),
         apiFetch<{ categories: Category[] }>("/menu/categories"),
       ]);
       setItems(itemsData.items);
@@ -99,7 +101,7 @@ export default function MenuItemsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, sort]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -115,6 +117,34 @@ export default function MenuItemsPage() {
     };
   }, [categories]);
 
+  const filteredItems = useMemo(() => {
+    let list = [...items];
+    if (categoryFilter !== "all") {
+      list = list.filter((i) => {
+        const id =
+          typeof i.category === "object" ? i.category._id : String(i.category);
+        return id === categoryFilter;
+      });
+    }
+    if (statusFilter !== "all") {
+      list = list.filter((i) => i.status === statusFilter);
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (i) =>
+          i.name.toLowerCase().includes(q) ||
+          i.description?.toLowerCase().includes(q) ||
+          i.slug?.toLowerCase().includes(q)
+      );
+    }
+    if (sort === "name") list.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === "price_asc") list.sort((a, b) => a.price - b.price);
+    else if (sort === "price_desc") list.sort((a, b) => b.price - a.price);
+    else list.sort((a, b) => b._id.localeCompare(a._id));
+    return list;
+  }, [items, categoryFilter, statusFilter, search, sort]);
+
   async function uploadImage(file: File) {
     const fd = new FormData();
     fd.append("image", file);
@@ -126,34 +156,16 @@ export default function MenuItemsPage() {
     return data.url;
   }
 
-  function parsePairs(text: string, mode: "size" | "topping") {
-    return text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line, idx) => {
-        const [label, extra] = line.split("|").map((s) => s.trim());
-        if (mode === "size") {
-          return {
-            id: `size-${idx + 1}`,
-            label: label || `Size ${idx + 1}`,
-            extra: Number(extra) || 0,
-          };
-        }
-        return {
-          id: `top-${idx + 1}`,
-          label: label || `Topping ${idx + 1}`,
-          price: Number(extra) || 0,
-        };
-      });
-  }
-
   const popularCount = useMemo(
     () => items.filter((i) => i.homepageBadge === "popular").length,
     [items]
   );
   const featuredCount = useMemo(
     () => items.filter((i) => i.isFeatured).length,
+    [items]
+  );
+  const chefCount = useMemo(
+    () => items.filter((i) => i.homepageBadge === "chef-special").length,
     [items]
   );
 
@@ -167,10 +179,20 @@ export default function MenuItemsPage() {
       return;
     }
 
-    const wasPopular =
-      editingId != null &&
-      items.find((i) => i._id === editingId)?.homepageBadge === "popular";
+    const editing = editingId
+      ? items.find((i) => i._id === editingId)
+      : undefined;
+    const wasFeatured = Boolean(editing?.isFeatured);
+    if (form.isFeatured && !wasFeatured && featuredCount >= 3) {
+      toast.error(
+        "Three featured dishes are already set. Unfeature one first."
+      );
+      return;
+    }
+
+    const wasPopular = editing?.homepageBadge === "popular";
     if (
+      !form.isChefSpecial &&
       form.homepageBadge === "popular" &&
       !wasPopular &&
       popularCount >= 6
@@ -181,6 +203,10 @@ export default function MenuItemsPage() {
       return;
     }
 
+    const homepageBadge: HomepageBadge = form.isChefSpecial
+      ? "chef-special"
+      : form.homepageBadge;
+
     setSaving(true);
     try {
       const payload = {
@@ -190,11 +216,25 @@ export default function MenuItemsPage() {
         price: priceNum,
         image: form.image,
         isFeatured: form.isFeatured,
-        homepageBadge: form.homepageBadge,
+        homepageBadge,
         customizable: form.customizable,
-        sizes: form.customizable ? parsePairs(form.sizesText, "size") : [],
+        sizes: form.customizable
+          ? form.sizes
+              .filter((s) => s.label.trim())
+              .map((s, idx) => ({
+                id: s.id || `size-${idx + 1}`,
+                label: s.label.trim(),
+                extra: Number(s.extra) || 0,
+              }))
+          : [],
         toppings: form.customizable
-          ? parsePairs(form.toppingsText, "topping")
+          ? form.toppings
+              .filter((t) => t.label.trim())
+              .map((t, idx) => ({
+                id: t.id || `top-${idx + 1}`,
+                label: t.label.trim(),
+                price: Number(t.price) || 0,
+              }))
           : [],
         status: form.status,
         isActive: form.isActive,
@@ -227,6 +267,8 @@ export default function MenuItemsPage() {
   }
 
   function startEdit(item: MenuItem) {
+    const badge = item.homepageBadge || "none";
+    const isChef = badge === "chef-special";
     setEditingId(item._id);
     setForm({
       name: item.name,
@@ -238,14 +280,21 @@ export default function MenuItemsPage() {
       price: String(item.price),
       image: item.image || "",
       isFeatured: item.isFeatured,
-      homepageBadge: item.homepageBadge || "none",
+      isChefSpecial: isChef,
+      homepageBadge: isChef
+        ? "none"
+        : (badge as Exclude<HomepageBadge, "chef-special">),
       customizable: item.customizable,
-      sizesText: (item.sizes || [])
-        .map((s) => `${s.label}|${s.extra}`)
-        .join("\n"),
-      toppingsText: (item.toppings || [])
-        .map((t) => `${t.label}|${t.price}`)
-        .join("\n"),
+      sizes: (item.sizes || []).map((s) => ({
+        id: s.id || newRowId(),
+        label: s.label,
+        extra: String(s.extra ?? 0),
+      })),
+      toppings: (item.toppings || []).map((t) => ({
+        id: t.id || newRowId(),
+        label: t.label,
+        price: String(t.price ?? 0),
+      })),
       status: item.status,
       isActive: item.isActive,
     });
@@ -305,6 +354,19 @@ export default function MenuItemsPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-xs"
           />
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c._id} value={c._id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-44">
               <SelectValue placeholder="Status" />
@@ -432,73 +494,108 @@ export default function MenuItemsPage() {
                     }}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <label className="flex items-center gap-2 text-sm font-semibold">
                     <input
                       type="checkbox"
                       checked={form.isFeatured}
-                      onChange={(e) =>
-                        patchForm({ isFeatured: e.target.checked })
-                      }
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        const wasFeatured =
+                          editingId != null &&
+                          items.find((i) => i._id === editingId)?.isFeatured;
+                        if (checked && !wasFeatured && featuredCount >= 3) {
+                          toast.error(
+                            "Three featured dishes are already set. Unfeature one first."
+                          );
+                          return;
+                        }
+                        patchForm({ isFeatured: checked });
+                      }}
                     />
                     Featured ({featuredCount}/3)
                   </label>
                   <label className="flex items-center gap-2 text-sm font-semibold">
                     <input
                       type="checkbox"
-                      checked={form.customizable}
+                      checked={form.isChefSpecial}
                       onChange={(e) =>
-                        patchForm({ customizable: e.target.checked })
+                        patchForm({ isChefSpecial: e.target.checked })
                       }
                     />
-                    Customizable
+                    Chef&apos;s Special ({chefCount})
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-semibold sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={form.customizable}
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        patchForm({
+                          customizable: on,
+                          sizes:
+                            on && form.sizes.length === 0
+                              ? [
+                                  {
+                                    id: newRowId(),
+                                    label: "Regular",
+                                    extra: "0",
+                                  },
+                                ]
+                              : form.sizes,
+                        });
+                      }}
+                    />
+                    Customizable (sizes & toppings)
                   </label>
                 </div>
-                <div className="space-y-1">
-                  <Label>Homepage section</Label>
-                  <Select
-                    value={form.homepageBadge}
-                    onValueChange={(v) => {
-                      const next = v as HomepageBadge;
-                      const wasPopular =
-                        editingId != null &&
-                        items.find((i) => i._id === editingId)
-                          ?.homepageBadge === "popular";
-                      if (
-                        next === "popular" &&
-                        !wasPopular &&
-                        popularCount >= 6
-                      ) {
-                        toast.error(
-                          "Six popular dishes are already added. The seventh item can't be added as Popular."
-                        );
-                        return;
-                      }
-                      patchForm({ homepageBadge: next });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="premium">Premium Dishes</SelectItem>
-                      <SelectItem value="popular">
-                        Popular Dishes ({popularCount}/6)
-                      </SelectItem>
-                      <SelectItem value="chef-special">
-                        Chef&apos;s Specials
-                      </SelectItem>
-                      <SelectItem value="weekly-best-seller">
-                        Weekly best seller
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-[var(--secondary)]">
-                    Popular Dishes show on the homepage in a 2-column grid (up
-                    to 6).
-                  </p>
-                </div>
+                {!form.isChefSpecial && (
+                  <div className="space-y-1">
+                    <Label>Homepage section</Label>
+                    <Select
+                      value={form.homepageBadge}
+                      onValueChange={(v) => {
+                        const next = v as Exclude<
+                          HomepageBadge,
+                          "chef-special"
+                        >;
+                        const wasPopular =
+                          editingId != null &&
+                          items.find((i) => i._id === editingId)
+                            ?.homepageBadge === "popular";
+                        if (
+                          next === "popular" &&
+                          !wasPopular &&
+                          popularCount >= 6
+                        ) {
+                          toast.error(
+                            "Six popular dishes are already added. The seventh item can't be added as Popular."
+                          );
+                          return;
+                        }
+                        patchForm({ homepageBadge: next });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="premium">Premium Dishes</SelectItem>
+                        <SelectItem value="popular">
+                          Popular Dishes ({popularCount}/6)
+                        </SelectItem>
+                        <SelectItem value="weekly-best-seller">
+                          Weekly best seller
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-[var(--secondary)]">
+                      Chef&apos;s Special is a separate checkbox above (not a
+                      category).
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <Label>Stock status</Label>
                   <Select
@@ -518,28 +615,132 @@ export default function MenuItemsPage() {
                   </Select>
                 </div>
                 {form.customizable && (
-                  <>
-                    <div className="space-y-1">
-                      <Label>Sizes (one per line: Label|extra)</Label>
-                      <Textarea
-                        value={form.sizesText}
-                        onChange={(e) =>
-                          patchForm({ sizesText: e.target.value })
-                        }
-                        placeholder={"Regular|0\nLarge|50"}
-                      />
+                  <div className="space-y-4 rounded-lg border border-[var(--outline-variant)] p-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label>Sizes</Label>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            patchForm({
+                              sizes: [
+                                ...form.sizes,
+                                { id: newRowId(), label: "", extra: "0" },
+                              ],
+                            })
+                          }
+                        >
+                          <FiPlus className="h-3.5 w-3.5" />
+                          Add size
+                        </Button>
+                      </div>
+                      {form.sizes.map((row, idx) => (
+                        <div key={row.id} className="flex gap-2">
+                          <Input
+                            placeholder="Label (e.g. Large)"
+                            value={row.label}
+                            onChange={(e) => {
+                              const sizes = [...form.sizes];
+                              sizes[idx] = { ...row, label: e.target.value };
+                              patchForm({ sizes });
+                            }}
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            className="w-24 shrink-0"
+                            placeholder="Extra"
+                            value={row.extra}
+                            onChange={(e) => {
+                              const sizes = [...form.sizes];
+                              sizes[idx] = { ...row, extra: e.target.value };
+                              patchForm({ sizes });
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              patchForm({
+                                sizes: form.sizes.filter((_, i) => i !== idx),
+                              })
+                            }
+                          >
+                            <FiTrash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                    <div className="space-y-1">
-                      <Label>Toppings (one per line: Label|price)</Label>
-                      <Textarea
-                        value={form.toppingsText}
-                        onChange={(e) =>
-                          patchForm({ toppingsText: e.target.value })
-                        }
-                        placeholder={"Extra Cheese|40"}
-                      />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label>Toppings</Label>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            patchForm({
+                              toppings: [
+                                ...form.toppings,
+                                { id: newRowId(), label: "", price: "0" },
+                              ],
+                            })
+                          }
+                        >
+                          <FiPlus className="h-3.5 w-3.5" />
+                          Add topping
+                        </Button>
+                      </div>
+                      {form.toppings.map((row, idx) => (
+                        <div key={row.id} className="flex gap-2">
+                          <Input
+                            placeholder="Label (e.g. Extra cheese)"
+                            value={row.label}
+                            onChange={(e) => {
+                              const toppings = [...form.toppings];
+                              toppings[idx] = {
+                                ...row,
+                                label: e.target.value,
+                              };
+                              patchForm({ toppings });
+                            }}
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            className="w-24 shrink-0"
+                            placeholder="Price"
+                            value={row.price}
+                            onChange={(e) => {
+                              const toppings = [...form.toppings];
+                              toppings[idx] = {
+                                ...row,
+                                price: e.target.value,
+                              };
+                              patchForm({ toppings });
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              patchForm({
+                                toppings: form.toppings.filter(
+                                  (_, i) => i !== idx
+                                ),
+                              })
+                            }
+                          >
+                            <FiTrash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  </>
+                  </div>
                 )}
                 <div className="flex flex-wrap gap-2">
                   <Button type="submit" disabled={saving || !categories.length}>
@@ -574,8 +775,15 @@ export default function MenuItemsPage() {
                 </CardContent>
               </Card>
             )}
+            {!loading && items.length > 0 && filteredItems.length === 0 && (
+              <Card>
+                <CardContent className="p-8 text-center text-sm text-[var(--secondary)]">
+                  No items match these filters.
+                </CardContent>
+              </Card>
+            )}
             {!loading &&
-              items.map((item) => (
+              filteredItems.map((item) => (
                 <Card key={item._id}>
                   <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                     <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[var(--surface-container)]">

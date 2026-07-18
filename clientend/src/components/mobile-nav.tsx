@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const items = [
   { href: "/", label: "Home", icon: FiHome },
   { href: "/menu", label: "Menu", icon: FiCoffee },
-  { href: "/checkout", label: "Cart", icon: FiShoppingBag },
+  { href: "/menu?cart=1", label: "Cart", icon: FiShoppingBag },
   { href: "/account", label: "Account", icon: FiUser },
 ];
 
@@ -23,9 +23,12 @@ export function MobileBottomNav() {
       <ul className="mx-auto grid max-w-lg grid-cols-4 px-2 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => {
           const Icon = item.icon;
-          const active =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href));
+          const pathOnly = item.href.split("?")[0];
+          const isCart = item.href.includes("cart=1");
+          const active = isCart
+            ? false
+            : pathname === pathOnly ||
+              (pathOnly !== "/" && pathname.startsWith(pathOnly));
           return (
             <li key={item.href}>
               <Link
@@ -47,7 +50,7 @@ export function MobileBottomNav() {
                 </motion.span>
                 {item.label}
                 <AnimatePresence>
-                  {item.href === "/checkout" && count > 0 && (
+                  {isCart && count > 0 && (
                     <motion.span
                       key={count}
                       initial={{ scale: 0.5, opacity: 0 }}

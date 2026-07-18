@@ -123,17 +123,14 @@ async function assertPopularSlotAvailable(excludeId) {
   }
 }
 
-/** Keep Featured Menu at 3 cards — demote oldest when a new one is featured. */
-async function ensureFeaturedCapacity(excludeId) {
+async function assertFeaturedSlotAvailable(excludeId) {
   const q = { isFeatured: true };
   if (excludeId) q._id = { $ne: excludeId };
-  const featured = await MenuItem.find(q).sort({ updatedAt: 1 });
-  const overflow = featured.length - (MAX_FEATURED_DISHES - 1);
-  if (overflow > 0) {
-    const demoteIds = featured.slice(0, overflow).map((row) => row._id);
-    await MenuItem.updateMany(
-      { _id: { $in: demoteIds } },
-      { $set: { isFeatured: false } }
+  const count = await MenuItem.countDocuments(q);
+  if (count >= MAX_FEATURED_DISHES) {
+    throw new ApiError(
+      400,
+      "Three featured dishes are already set. Unfeature one before adding another."
     );
   }
 }
@@ -152,7 +149,7 @@ async function createMenuItem(req, res) {
   }
   const isFeatured = Boolean(body.isFeatured);
   if (isFeatured) {
-    await ensureFeaturedCapacity();
+    await assertFeaturedSlotAvailable();
   }
   const item = await MenuItem.create({
     slug,
@@ -187,7 +184,7 @@ async function updateMenuItem(req, res) {
   const becomingFeatured =
     body.isFeatured === true || body.isFeatured === "true";
   if (becomingFeatured && !item.isFeatured) {
-    await ensureFeaturedCapacity(item._id);
+    await assertFeaturedSlotAvailable(item._id);
   }
   const fields = [
     "name",

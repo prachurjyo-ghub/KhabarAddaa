@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -18,6 +19,7 @@ import { MobileBottomNav } from "@/components/mobile-nav";
 import { ScrollProgress } from "@/components/scroll-progress";
 import { Reveal, ease } from "@/components/motion";
 import { FoodImage } from "@/components/food-image";
+import { useAuth } from "@/components/auth-provider";
 import { useCart } from "@/components/cart-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
 import { resolveFoodImage } from "@/lib/food-images";
@@ -43,6 +44,7 @@ type MenuItem = {
   image: string;
   description: string;
   category: { _id: string; name: string } | string;
+  homepageBadge?: string;
   customizable: boolean;
   status: string;
   sizes: Array<{ id: string; label: string; extra: number }>;
@@ -50,7 +52,6 @@ type MenuItem = {
 };
 
 type MenuPayload = { items: MenuItem[]; categories: Category[] };
-let menuCache: MenuPayload | null = null;
 
 function categoryId(item: MenuItem) {
   return typeof item.category === "object" ? item.category._id : String(item.category);
@@ -61,37 +62,74 @@ function categoryLabel(item: MenuItem, categories: Category[]) {
   return categories.find((c) => c._id === item.category)?.name || "Menu";
 }
 
-export default function MenuPage() {
+function MenuPageContent() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("name");
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   const { addItem, items: cartItems, updateQty, subtotal, count } = useCart();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [filtersVisible, setFiltersVisible] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const lastScrollY = useRef(0);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
-    if (menuCache) {
-      setItems(menuCache.items);
-      setCategories(menuCache.categories);
-      setLoading(false);
-      return;
-    }
+    if (searchParams.get("cart") === "1") setDrawerOpen(true);
+  }, [searchParams]);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    lastScrollY.current = window.scrollY;
+
+    const onScroll = () => {
+      // Desktop: always show filters
+      if (window.matchMedia("(min-width: 768px)").matches) {
+        setFiltersVisible(true);
+        lastScrollY.current = window.scrollY;
+        return;
+      }
+
+      const y = window.scrollY;
+      const delta = y - lastScrollY.current;
+
+      if (y < 80) {
+        setFiltersVisible(true);
+      } else if (delta > 6) {
+        setFiltersVisible(false);
+      } else if (delta < -6) {
+        setFiltersVisible(true);
+      }
+
+      lastScrollY.current = y;
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
     apiFetch<MenuPayload>("/menu/public")
       .then((data) => {
-        const payload: MenuPayload = {
-          categories: data.categories,
-          items: data.items.map((item) => ({
+        setItems(
+          (data.items || []).map((item) => ({
             ...item,
             image: resolveFoodImage(item.name, item.slug, item.image),
-          })),
-        };
-        menuCache = payload;
-        setItems(payload.items);
-        setCategories(payload.categories);
+          }))
+        );
+        setCategories(data.categories || []);
       })
       .catch((err) =>
         toast.error(err instanceof Error ? err.message : "Failed to load menu")
@@ -101,22 +139,28 @@ export default function MenuPage() {
 
   const filtered = useMemo(() => {
     let list = [...items];
-    if (category !== "all") {
+    if (category === "chef-special") {
+      list = list.filter((i) => i.homepageBadge === "chef-special");
+    } else if (category !== "all") {
       list = list.filter((i) => categoryId(i) === category);
     }
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (i) =>
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((i) => {
+        const cat = categoryLabel(i, categories).toLowerCase();
+        return (
           i.name.toLowerCase().includes(q) ||
-          i.description?.toLowerCase().includes(q)
-      );
+          i.slug?.toLowerCase().includes(q) ||
+          i.description?.toLowerCase().includes(q) ||
+          cat.includes(q)
+        );
+      });
     }
     if (sort === "price_asc") list.sort((a, b) => a.price - b.price);
     else if (sort === "price_desc") list.sort((a, b) => b.price - a.price);
     else list.sort((a, b) => a.name.localeCompare(b.name));
     return list;
-  }, [items, category, search, sort]);
+  }, [items, category, search, sort, categories]);
 
   function quickAdd(item: MenuItem) {
     if (item.status === "Out of Stock") {
@@ -135,7 +179,6 @@ export default function MenuPage() {
       image: resolveFoodImage(item.name, item.slug, item.image),
     });
     toast.success(`Added ${item.name}`);
-    setDrawerOpen(true);
   }
 
   return (
@@ -143,26 +186,31 @@ export default function MenuPage() {
       <ScrollProgress />
       <SiteHeader transparent />
 
-      <section className="relative h-[18vh] min-h-[140px] max-h-[190px] overflow-hidden md:h-[20vh] md:max-h-[210px]">
+      <section className="relative min-h-[220px] overflow-hidden md:min-h-[240px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/Food_Items_Images/pasta.jpg"
           alt="KhabarAdda menu"
           className="absolute inset-0 h-full w-full object-cover object-[center_40%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/35" />
-        <div className="relative mx-auto flex h-full max-w-6xl flex-col justify-end px-4 pb-4 pt-16 md:pb-5">
-          <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-wide text-gold-glow md:text-3xl">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/55 to-black/40" />
+        <div className="relative mx-auto flex min-h-[220px] max-w-6xl flex-col justify-end px-4 pb-5 pt-24 md:min-h-[240px] md:pb-6 md:pt-28">
+          <h1 className="font-[family-name:var(--font-display)] text-xl font-semibold leading-snug tracking-wide text-gold-glow sm:text-2xl md:text-3xl">
             Discover Your Next Favorite Dish
           </h1>
-          <p className="mt-1 max-w-lg text-xs font-light text-white/65 md:text-sm">
+          <p className="mt-1.5 max-w-lg text-xs font-light leading-relaxed text-white/65 md:text-sm">
             Explore chef-crafted recipes made with fresh ingredients, bold
             flavors, and unforgettable taste.
           </p>
         </div>
       </section>
 
-      <div className="sticky top-[64px] z-30 border-b border-[var(--outline-variant)] bg-[#0c0c0c]/92 backdrop-blur-md">
+      <div
+        className={cn(
+          "sticky top-[64px] z-30 border-b border-[var(--outline-variant)] bg-[#0c0c0c]/92 backdrop-blur-md transition-transform duration-300 ease-out md:translate-y-0",
+          filtersVisible ? "translate-y-0" : "-translate-y-[120%] md:translate-y-0"
+        )}
+      >
         <div className="mx-auto max-w-6xl px-4 py-3">
           <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
@@ -176,6 +224,18 @@ export default function MenuPage() {
               )}
             >
               All
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategory("chef-special")}
+              className={cn(
+                "shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+                category === "chef-special"
+                  ? "bg-gradient-to-b from-[#e0c078] to-[#c5a059] text-[#121212]"
+                  : "border border-[var(--gold)]/30 bg-[var(--surface-warm)] text-white/70 hover:border-[var(--gold)]/55 hover:text-[var(--gold-bright)]"
+              )}
+            >
+              Chef&apos;s Special
             </button>
             {categories.map((c) => (
               <button
@@ -196,12 +256,14 @@ export default function MenuPage() {
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <div className="relative min-w-[200px] flex-1">
-              <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--gold)]/60" />
+              <FiSearch className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-[var(--gold)]/60" />
               <Input
+                type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search dishes…"
-                className="h-10 border-[var(--gold)]/25 bg-[var(--surface)] pl-9"
+                autoComplete="off"
+                className="h-10 border-[var(--gold)]/25 bg-[var(--surface)] pl-9 text-white placeholder:text-white/45"
               />
             </div>
             <Select value={sort} onValueChange={setSort}>
@@ -224,9 +286,12 @@ export default function MenuPage() {
 
       <div className="mx-auto max-w-6xl px-4 py-10">
         {loading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-[360px] rounded-[1.4rem]" />
+              <Skeleton
+                key={i}
+                className="h-[210px] rounded-[1.2rem] md:h-[360px]"
+              />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -249,17 +314,12 @@ export default function MenuPage() {
             </Button>
           </Reveal>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3">
             {filtered.map((item, index) => (
               <article
                 key={item._id}
-                className="gold-frame group relative h-[360px] overflow-hidden transition-transform duration-200 hover:-translate-y-1"
+                className="gold-frame group relative h-[210px] overflow-hidden transition-transform duration-200 hover:-translate-y-1 md:h-[360px]"
               >
-                <Link
-                  href={`/menu/${item.slug}`}
-                  className="absolute inset-0 z-[1]"
-                  aria-label={`View ${item.name}`}
-                />
                 <FoodImage
                   name={item.name}
                   slug={item.slug}
@@ -270,52 +330,49 @@ export default function MenuPage() {
                   className="pointer-events-none absolute inset-0 h-full w-full"
                   imgClassName="transition-transform duration-500 group-hover:scale-[1.03]"
                 />
-                {/* Soft bottom scrim only — keeps food bright while text stays readable */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/35 to-transparent" />
 
                 {item.customizable && (
-                  <span className="pointer-events-none absolute left-3 top-3 z-10 rounded-full bg-[var(--gold)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#121212]">
+                  <span className="pointer-events-none absolute left-2 top-2 z-10 rounded-full bg-[var(--gold)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#121212] md:left-3 md:top-3 md:px-2.5 md:py-1 md:text-[10px]">
                     Custom
                   </span>
                 )}
-                <Badge
-                  variant="secondary"
-                  className="pointer-events-none absolute right-3 top-3 z-10 border border-[var(--gold)]/35 bg-black/55 text-[var(--gold-bright)] backdrop-blur-sm"
-                >
-                  {categoryLabel(item, categories)}
-                </Badge>
+                <p className="pointer-events-none absolute right-2 top-2 z-10 rounded-md bg-[var(--gold)] px-1.5 py-0.5 text-[11px] font-bold text-[#121212] shadow-sm md:right-3 md:top-3 md:px-2.5 md:py-1 md:text-sm">
+                  {formatBDT(item.price)}
+                </p>
 
                 {item.status === "Out of Stock" && (
-                  <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/60 text-sm font-bold text-white">
+                  <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-black/60 text-xs font-bold text-white md:text-sm">
                     Out of stock
                   </div>
                 )}
 
-                <div className="absolute inset-x-0 bottom-0 z-[2] flex flex-col gap-3 p-4">
-                  <Link href={`/menu/${item.slug}`} className="block">
-                    <div className="flex items-end justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold leading-tight text-gold-glow">
-                          {item.name}
-                        </h2>
-                        <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm font-light text-white/75">
-                          {item.description ||
-                            "Fresh from the KhabarAdda kitchen."}
-                        </p>
-                      </div>
-                      <p className="shrink-0 rounded-md bg-[var(--gold)] px-2.5 py-1 text-sm font-bold text-[#121212]">
-                        {formatBDT(item.price)}
-                      </p>
-                    </div>
-                  </Link>
-                  <div className="relative z-[3] flex gap-2">
-                    <Button asChild variant="outline" size="sm" className="flex-1">
+                <div className="absolute inset-x-0 bottom-0 z-[2] flex flex-col gap-2 p-2.5 md:gap-3 md:p-4">
+                  <h2
+                    className="truncate font-[family-name:var(--font-display)] text-sm font-semibold leading-tight text-gold-glow md:text-xl"
+                    title={item.name}
+                    style={{
+                      WebkitTextStroke: "0.6px rgba(0,0,0,0.95)",
+                      paintOrder: "stroke fill",
+                      textShadow:
+                        "0 1px 2px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.65)",
+                    }}
+                  >
+                    {item.name}
+                  </h2>
+                  <div className="relative z-[3] flex gap-1.5 md:gap-2">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="h-8 flex-1 px-2 text-xs md:h-9 md:text-sm"
+                    >
                       <Link href={`/menu/${item.slug}`}>Details</Link>
                     </Button>
                     <Button
                       type="button"
                       size="sm"
-                      className="flex-[1.2]"
+                      className="h-8 flex-1 px-2 text-xs md:h-9 md:text-sm"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -365,7 +422,7 @@ export default function MenuPage() {
 
       <AnimatePresence>
         {drawerOpen && (
-          <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="fixed inset-0 z-50 flex items-end justify-end md:items-stretch">
             <motion.button
               type="button"
               className="absolute inset-0 bg-black/45"
@@ -376,13 +433,14 @@ export default function MenuPage() {
               exit={{ opacity: 0 }}
             />
             <motion.aside
-              className="relative flex h-full w-full max-w-md flex-col bg-[var(--background)] shadow-2xl"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 280, damping: 30 }}
+              className="relative flex max-h-[58vh] w-full flex-col rounded-t-2xl bg-[var(--background)] shadow-2xl md:max-h-none md:h-full md:max-w-md md:rounded-none"
+              initial={isDesktop ? { x: "100%" } : { y: "100%" }}
+              animate={isDesktop ? { x: 0 } : { y: 0 }}
+              exit={isDesktop ? { x: "100%" } : { y: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
             >
-              <div className="flex items-center justify-between border-b border-[var(--outline-variant)] px-5 py-4">
+              <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-white/20 md:hidden" />
+              <div className="flex items-center justify-between border-b border-[var(--outline-variant)] px-5 py-3 md:py-4">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--gold)]">
                     Your order
@@ -399,9 +457,9 @@ export default function MenuPage() {
                   <FiX className="h-5 w-5" />
                 </button>
               </div>
-              <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-3 md:py-4">
                 {cartItems.length === 0 && (
-                  <p className="py-16 text-center text-sm text-white/50">
+                  <p className="py-10 text-center text-sm text-white/50 md:py-16">
                     Your cart is empty. Add something delicious.
                   </p>
                 )}
@@ -410,13 +468,13 @@ export default function MenuPage() {
                     <motion.div
                       key={line.key}
                       layout
-                      initial={{ opacity: 0, x: 24 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 24 }}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 12 }}
                       transition={{ duration: 0.25, ease }}
                       className="gold-frame flex items-center gap-3 p-3"
                     >
-                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--gold)]/25">
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[var(--gold)]/25 md:h-16 md:w-16">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={line.image || "/Food_Items_Images/pasta.jpg"}
@@ -453,15 +511,26 @@ export default function MenuPage() {
                   ))}
                 </AnimatePresence>
               </div>
-              <div className="border-t border-[var(--outline-variant)] bg-[var(--surface)] px-5 py-4">
+              <div className="shrink-0 border-t border-[var(--outline-variant)] bg-[var(--surface)] px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:py-4">
                 <p className="mb-3 flex justify-between text-base font-bold">
                   <span className="text-white/80">Subtotal</span>
                   <span className="text-[var(--gold-bright)]">
                     {formatBDT(subtotal)}
                   </span>
                 </p>
-                <Button asChild className="w-full" size="lg">
-                  <Link href="/checkout">Checkout</Link>
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => {
+                    if (!user) {
+                      toast.message("Please log in to checkout");
+                      router.push("/login?next=/checkout");
+                      return;
+                    }
+                    router.push("/checkout");
+                  }}
+                >
+                  Checkout
                 </Button>
               </div>
             </motion.aside>
@@ -472,5 +541,19 @@ export default function MenuPage() {
       <SiteFooter />
       <MobileBottomNav />
     </div>
+  );
+}
+
+export default function MenuPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="page-pad flex min-h-screen items-center justify-center bg-[var(--background)] text-white/60">
+          Loading menu…
+        </div>
+      }
+    >
+      <MenuPageContent />
+    </Suspense>
   );
 }

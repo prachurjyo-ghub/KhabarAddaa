@@ -45,19 +45,22 @@ function makeKey(line: Omit<CartLine, "key">) {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartLine[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(CART_KEY);
-      if (raw) setItems(JSON.parse(raw));
+      if (raw) setItems(JSON.parse(raw) as CartLine[]);
     } catch {
       /* ignore */
     }
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     localStorage.setItem(CART_KEY, JSON.stringify(items));
-  }, [items]);
+  }, [items, hydrated]);
 
   const addItem = useCallback((line: Omit<CartLine, "key">) => {
     const key = makeKey(line);
