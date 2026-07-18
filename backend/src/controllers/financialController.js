@@ -54,17 +54,32 @@ async function listVatRules(_req, res) {
   return sendSuccess(res, { vatRules });
 }
 
+function assertScope(body) {
+  const appliesTo = body.appliesTo || "all";
+  if (appliesTo === "category" && !body.categoryId) {
+    throw new ApiError(400, "Category is required when applies to category");
+  }
+  if (appliesTo === "product" && !body.productId) {
+    throw new ApiError(400, "Product is required when applies to product");
+  }
+  return appliesTo;
+}
+
 async function createVatRule(req, res) {
   const body = req.body || {};
   if (!body.name || body.rate === undefined) {
     throw new ApiError(400, "Name and rate required");
   }
+  const appliesTo = assertScope(body);
   const row = await VatRule.create({
     name: body.name,
     rate: Number(body.rate),
-    appliesTo: body.appliesTo || "all",
-    categoryId: body.categoryId || null,
-    productId: body.productId || null,
+    appliesTo,
+    categoryId:
+      appliesTo === "category" || appliesTo === "product"
+        ? body.categoryId || null
+        : null,
+    productId: appliesTo === "product" ? body.productId || null : null,
     isActive: body.isActive !== false,
   });
   return sendSuccess(res, { vatRule: row }, "Created", 201);
@@ -74,8 +89,39 @@ async function updateVatRule(req, res) {
   const row = await VatRule.findById(req.params.id);
   if (!row) throw new ApiError(404, "Not found");
   const body = req.body || {};
-  for (const key of ["name", "rate", "appliesTo", "categoryId", "productId", "isActive"]) {
-    if (body[key] !== undefined) row[key] = body[key];
+  if (
+    body.appliesTo !== undefined ||
+    body.categoryId !== undefined ||
+    body.productId !== undefined
+  ) {
+    assertScope({
+      appliesTo: body.appliesTo ?? row.appliesTo,
+      categoryId:
+        body.categoryId !== undefined ? body.categoryId : row.categoryId,
+      productId: body.productId !== undefined ? body.productId : row.productId,
+    });
+  }
+  if (body.name !== undefined) row.name = body.name;
+  if (body.rate !== undefined) row.rate = Number(body.rate);
+  if (body.appliesTo !== undefined) row.appliesTo = body.appliesTo;
+  if (body.isActive !== undefined) row.isActive = Boolean(body.isActive);
+  if (body.appliesTo !== undefined || body.categoryId !== undefined) {
+    const appliesTo = body.appliesTo ?? row.appliesTo;
+    row.categoryId =
+      appliesTo === "category" || appliesTo === "product"
+        ? body.categoryId !== undefined
+          ? body.categoryId || null
+          : row.categoryId
+        : null;
+  }
+  if (body.appliesTo !== undefined || body.productId !== undefined) {
+    const appliesTo = body.appliesTo ?? row.appliesTo;
+    row.productId =
+      appliesTo === "product"
+        ? body.productId !== undefined
+          ? body.productId || null
+          : row.productId
+        : null;
   }
   await row.save();
   return sendSuccess(res, { vatRule: row }, "Updated");
@@ -98,13 +144,17 @@ async function createOffer(req, res) {
   if (!body.name || !body.type || body.value === undefined) {
     throw new ApiError(400, "Name, type, and value required");
   }
+  const appliesTo = assertScope(body);
   const row = await Offer.create({
     name: body.name,
     type: body.type,
     value: Number(body.value),
-    appliesTo: body.appliesTo || "all",
-    categoryId: body.categoryId || null,
-    productId: body.productId || null,
+    appliesTo,
+    categoryId:
+      appliesTo === "category" || appliesTo === "product"
+        ? body.categoryId || null
+        : null,
+    productId: appliesTo === "product" ? body.productId || null : null,
     isActive: body.isActive !== false,
   });
   return sendSuccess(res, { offer: row }, "Created", 201);
@@ -114,16 +164,40 @@ async function updateOffer(req, res) {
   const row = await Offer.findById(req.params.id);
   if (!row) throw new ApiError(404, "Not found");
   const body = req.body || {};
-  for (const key of [
-    "name",
-    "type",
-    "value",
-    "appliesTo",
-    "categoryId",
-    "productId",
-    "isActive",
-  ]) {
-    if (body[key] !== undefined) row[key] = body[key];
+  if (
+    body.appliesTo !== undefined ||
+    body.categoryId !== undefined ||
+    body.productId !== undefined
+  ) {
+    assertScope({
+      appliesTo: body.appliesTo ?? row.appliesTo,
+      categoryId:
+        body.categoryId !== undefined ? body.categoryId : row.categoryId,
+      productId: body.productId !== undefined ? body.productId : row.productId,
+    });
+  }
+  if (body.name !== undefined) row.name = body.name;
+  if (body.type !== undefined) row.type = body.type;
+  if (body.value !== undefined) row.value = Number(body.value);
+  if (body.appliesTo !== undefined) row.appliesTo = body.appliesTo;
+  if (body.isActive !== undefined) row.isActive = Boolean(body.isActive);
+  if (body.appliesTo !== undefined || body.categoryId !== undefined) {
+    const appliesTo = body.appliesTo ?? row.appliesTo;
+    row.categoryId =
+      appliesTo === "category" || appliesTo === "product"
+        ? body.categoryId !== undefined
+          ? body.categoryId || null
+          : row.categoryId
+        : null;
+  }
+  if (body.appliesTo !== undefined || body.productId !== undefined) {
+    const appliesTo = body.appliesTo ?? row.appliesTo;
+    row.productId =
+      appliesTo === "product"
+        ? body.productId !== undefined
+          ? body.productId || null
+          : row.productId
+        : null;
   }
   await row.save();
   return sendSuccess(res, { offer: row }, "Updated");

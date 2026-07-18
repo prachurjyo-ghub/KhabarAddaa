@@ -19,6 +19,12 @@ router.post(
   requireCustomer,
   asyncHandler(booking.createPublicBooking)
 );
+router.get(
+  "/mine",
+  authenticate,
+  requireCustomer,
+  asyncHandler(booking.myBookings)
+);
 
 // Tables
 router.get(

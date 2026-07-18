@@ -3,6 +3,9 @@ import { Cormorant_Garamond, Montserrat } from "next/font/google";
 import { Toaster } from "sonner";
 import { CartProvider } from "@/components/cart-provider";
 import { AuthProvider } from "@/components/auth-provider";
+import { JsonLd } from "@/components/json-ld";
+import { buildMetadata, restaurantJsonLd } from "@/lib/seo";
+import { siteConfig } from "@/lib/site-config";
 import "./globals.css";
 
 const display = Cormorant_Garamond({
@@ -18,9 +21,23 @@ const body = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "KhabarAdda | Culinary Excellence",
-  description:
-    "A journey of flavor, artistry, and refined ambiance — order online or reserve your table.",
+  metadataBase: new URL(siteConfig.url),
+  ...buildMetadata({
+    title: siteConfig.name,
+    description: siteConfig.description,
+    path: "/",
+  }),
+  keywords: [
+    "KhabarAdda",
+    "restaurant Dhanmondi",
+    "restaurant Dhaka",
+    "Dhanmondi dining",
+    "food delivery Dhaka",
+    "table reservation Dhaka",
+    "order food online Bangladesh",
+  ],
+  authors: [{ name: siteConfig.name }],
+  creator: siteConfig.name,
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -38,6 +55,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${display.variable} ${body.variable} antialiased`}>
+        <JsonLd data={restaurantJsonLd()} />
         <AuthProvider>
           <CartProvider>
             {children}

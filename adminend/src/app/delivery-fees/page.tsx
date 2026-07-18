@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import { AdminShell } from "@/components/admin-shell";
@@ -28,26 +28,177 @@ type DeliveryFee = {
   minOrder: number;
   isActive: boolean;
 };
+
+type Scope = "all" | "category" | "product";
+
 type VatRule = {
   _id: string;
   name: string;
   rate: number;
-  appliesTo: string;
+  appliesTo: Scope;
+  categoryId?: string | null;
+  productId?: string | null;
   isActive: boolean;
 };
+
 type Offer = {
   _id: string;
   name: string;
   type: "percent" | "fixed";
   value: number;
-  appliesTo: string;
+  appliesTo: Scope;
+  categoryId?: string | null;
+  productId?: string | null;
   isActive: boolean;
 };
+
+type Category = { _id: string; name: string };
+type MenuItem = {
+  _id: string;
+  name: string;
+  category: { _id: string; name: string } | string;
+};
+
+type ScopeForm = {
+  appliesTo: Scope;
+  categoryId: string;
+  productId: string;
+};
+
+const emptyScope: ScopeForm = {
+  appliesTo: "all",
+  categoryId: "",
+  productId: "",
+};
+
+function idOf(value: unknown): string {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "object" && value !== null && "_id" in value) {
+    return String((value as { _id: string })._id);
+  }
+  return String(value);
+}
+
+function ScopeFields({
+  value,
+  onChange,
+  categories,
+  products,
+}: {
+  value: ScopeForm;
+  onChange: (next: ScopeForm) => void;
+  categories: Category[];
+  products: MenuItem[];
+}) {
+  const filteredProducts = useMemo(() => {
+    if (value.appliesTo !== "product" || !value.categoryId) return products;
+    return products.filter((p) => {
+      const catId =
+        typeof p.category === "object" ? p.category._id : String(p.category);
+      return catId === value.categoryId;
+    });
+  }, [products, value.appliesTo, value.categoryId]);
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <Label>Applies to</Label>
+        <Select
+          value={value.appliesTo}
+          onValueChange={(v) =>
+            onChange({
+              ...value,
+              appliesTo: v as Scope,
+              categoryId: v === "all" ? "" : value.categoryId,
+              productId: v === "product" ? value.productId : "",
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All menu</SelectItem>
+            <SelectItem value="category">Specific category</SelectItem>
+            <SelectItem value="product">Specific product</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {(value.appliesTo === "category" || value.appliesTo === "product") && (
+        <div className="space-y-1">
+          <Label>
+            {value.appliesTo === "category"
+              ? "Category"
+              : "Category (optional filter)"}
+          </Label>
+          <Select
+            value={value.categoryId || undefined}
+            onValueChange={(v) =>
+              onChange({
+                ...value,
+                categoryId: v,
+                productId: "",
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue
+                placeholder={
+                  categories.length
+                    ? "Select category"
+                    : "No categories yet"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c._id} value={c._id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {value.appliesTo === "product" && (
+        <div className="space-y-1">
+          <Label>Product</Label>
+          <Select
+            value={value.productId || undefined}
+            onValueChange={(v) => onChange({ ...value, productId: v })}
+          >
+            <SelectTrigger>
+              <SelectValue
+                placeholder={
+                  filteredProducts.length
+                    ? "Select product"
+                    : "No products available"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredProducts.map((p) => (
+                <SelectItem key={p._id} value={p._id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function FinancialsPage() {
   const [deliveryFees, setDeliveryFees] = useState<DeliveryFee[]>([]);
   const [vatRules, setVatRules] = useState<VatRule[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [feeForm, setFeeForm] = useState({
@@ -61,8 +212,8 @@ export default function FinancialsPage() {
   const [vatForm, setVatForm] = useState({
     name: "",
     rate: "",
-    appliesTo: "all",
     isActive: true,
+    ...emptyScope,
   });
   const [vatEdit, setVatEdit] = useState<string | null>(null);
 
@@ -70,22 +221,49 @@ export default function FinancialsPage() {
     name: "",
     type: "percent" as "percent" | "fixed",
     value: "",
-    appliesTo: "all",
     isActive: true,
+    ...emptyScope,
   });
   const [offerEdit, setOfferEdit] = useState<string | null>(null);
+
+  const categoryName = useMemo(() => {
+    const map = new Map(categories.map((c) => [c._id, c.name]));
+    return (id?: string | null) => (id ? map.get(id) || id : "—");
+  }, [categories]);
+
+  const productName = useMemo(() => {
+    const map = new Map(products.map((p) => [p._id, p.name]));
+    return (id?: string | null) => (id ? map.get(id) || id : "—");
+  }, [products]);
+
+  const scopeLabel = useCallback(
+    (row: { appliesTo: Scope; categoryId?: string | null; productId?: string | null }) => {
+      if (row.appliesTo === "category") {
+        return `Category · ${categoryName(idOf(row.categoryId))}`;
+      }
+      if (row.appliesTo === "product") {
+        return `Product · ${productName(idOf(row.productId))}`;
+      }
+      return "All menu";
+    },
+    [categoryName, productName]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [fees, vat, offs] = await Promise.all([
+      const [fees, vat, offs, menu] = await Promise.all([
         apiFetch<{ deliveryFees: DeliveryFee[] }>("/financials/delivery-fees"),
         apiFetch<{ vatRules: VatRule[] }>("/financials/vat-rules"),
         apiFetch<{ offers: Offer[] }>("/financials/offers"),
+        // Public menu avoids requiring "menu" permission for financials staff
+        apiFetch<{ categories: Category[]; items: MenuItem[] }>("/menu/public"),
       ]);
       setDeliveryFees(fees.deliveryFees);
       setVatRules(vat.vatRules);
       setOffers(offs.offers);
+      setCategories(menu.categories);
+      setProducts(menu.items);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -96,6 +274,29 @@ export default function FinancialsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  function validateScope(scope: ScopeForm, label: string) {
+    if (scope.appliesTo === "category" && !scope.categoryId) {
+      toast.error(`${label}: select a category`);
+      return false;
+    }
+    if (scope.appliesTo === "product" && !scope.productId) {
+      toast.error(`${label}: select a product`);
+      return false;
+    }
+    return true;
+  }
+
+  function scopePayload(scope: ScopeForm) {
+    return {
+      appliesTo: scope.appliesTo,
+      categoryId:
+        scope.appliesTo === "category" || scope.appliesTo === "product"
+          ? scope.categoryId || null
+          : null,
+      productId: scope.appliesTo === "product" ? scope.productId || null : null,
+    };
+  }
 
   async function saveFee(e: FormEvent) {
     e.preventDefault();
@@ -129,12 +330,13 @@ export default function FinancialsPage() {
 
   async function saveVat(e: FormEvent) {
     e.preventDefault();
+    if (!validateScope(vatForm, "VAT")) return;
     try {
       const payload = {
         name: vatForm.name,
         rate: Number(vatForm.rate),
-        appliesTo: vatForm.appliesTo,
         isActive: vatForm.isActive,
+        ...scopePayload(vatForm),
       };
       if (vatEdit) {
         await apiFetch(`/financials/vat-rules/${vatEdit}`, {
@@ -149,7 +351,7 @@ export default function FinancialsPage() {
         });
         toast.success("VAT created");
       }
-      setVatForm({ name: "", rate: "", appliesTo: "all", isActive: true });
+      setVatForm({ name: "", rate: "", isActive: true, ...emptyScope });
       setVatEdit(null);
       await load();
     } catch (err) {
@@ -159,13 +361,14 @@ export default function FinancialsPage() {
 
   async function saveOffer(e: FormEvent) {
     e.preventDefault();
+    if (!validateScope(offerForm, "Offer")) return;
     try {
       const payload = {
         name: offerForm.name,
         type: offerForm.type,
         value: Number(offerForm.value),
-        appliesTo: offerForm.appliesTo,
         isActive: offerForm.isActive,
+        ...scopePayload(offerForm),
       };
       if (offerEdit) {
         await apiFetch(`/financials/offers/${offerEdit}`, {
@@ -184,8 +387,8 @@ export default function FinancialsPage() {
         name: "",
         type: "percent",
         value: "",
-        appliesTo: "all",
         isActive: true,
+        ...emptyScope,
       });
       setOfferEdit(null);
       await load();
@@ -202,7 +405,8 @@ export default function FinancialsPage() {
             Financials
           </h1>
           <p className="text-sm text-[var(--secondary)]">
-            Delivery fees, VAT rules, and offers.
+            Delivery fees, VAT, and offers — apply to all menu, a category, or a
+            single product.
           </p>
         </div>
 
@@ -312,7 +516,8 @@ export default function FinancialsPage() {
                             </Badge>
                           </div>
                           <p className="text-sm text-[var(--secondary)]">
-                            {formatBDT(f.fee)} · min order {formatBDT(f.minOrder)}
+                            {formatBDT(f.fee)} · min order{" "}
+                            {formatBDT(f.minOrder)}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -362,7 +567,7 @@ export default function FinancialsPage() {
             </TabsContent>
 
             <TabsContent value="vat">
-              <div className="grid gap-6 xl:grid-cols-[340px_1fr]">
+              <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
                 <Card>
                   <CardHeader>
                     <CardTitle>{vatEdit ? "Edit VAT" : "Add VAT"}</CardTitle>
@@ -392,24 +597,14 @@ export default function FinancialsPage() {
                           required
                         />
                       </div>
-                      <div className="space-y-1">
-                        <Label>Applies to</Label>
-                        <Select
-                          value={vatForm.appliesTo}
-                          onValueChange={(v) =>
-                            setVatForm({ ...vatForm, appliesTo: v })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All</SelectItem>
-                            <SelectItem value="category">Category</SelectItem>
-                            <SelectItem value="product">Product</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <ScopeFields
+                        value={vatForm}
+                        onChange={(scope) =>
+                          setVatForm((prev) => ({ ...prev, ...scope }))
+                        }
+                        categories={categories}
+                        products={products}
+                      />
                       <label className="flex items-center gap-2 text-sm font-semibold">
                         <input
                           type="checkbox"
@@ -423,25 +618,51 @@ export default function FinancialsPage() {
                         />
                         Active
                       </label>
-                      <Button type="submit">
-                        {vatEdit ? "Update" : "Create"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button type="submit">
+                          {vatEdit ? "Update" : "Create"}
+                        </Button>
+                        {vatEdit && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                              setVatEdit(null);
+                              setVatForm({
+                                name: "",
+                                rate: "",
+                                isActive: true,
+                                ...emptyScope,
+                              });
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
                     </form>
                   </CardContent>
                 </Card>
                 <div className="space-y-3">
+                  {vatRules.length === 0 && (
+                    <Card>
+                      <CardContent className="p-6 text-sm text-[var(--secondary)]">
+                        No VAT rules yet.
+                      </CardContent>
+                    </Card>
+                  )}
                   {vatRules.map((v) => (
                     <Card key={v._id}>
                       <CardContent className="flex items-center justify-between gap-3 p-4">
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <p className="font-bold">{v.name}</p>
                             <Badge variant={v.isActive ? "success" : "outline"}>
                               {v.isActive ? "Active" : "Off"}
                             </Badge>
                           </div>
                           <p className="text-sm text-[var(--secondary)]">
-                            {v.rate}% · {v.appliesTo}
+                            {v.rate}% · {scopeLabel(v)}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -453,8 +674,10 @@ export default function FinancialsPage() {
                               setVatForm({
                                 name: v.name,
                                 rate: String(v.rate),
-                                appliesTo: v.appliesTo || "all",
                                 isActive: v.isActive,
+                                appliesTo: (v.appliesTo || "all") as Scope,
+                                categoryId: idOf(v.categoryId),
+                                productId: idOf(v.productId),
                               });
                             }}
                           >
@@ -465,9 +688,10 @@ export default function FinancialsPage() {
                             variant="danger"
                             onClick={async () => {
                               try {
-                                await apiFetch(`/financials/vat-rules/${v._id}`, {
-                                  method: "DELETE",
-                                });
+                                await apiFetch(
+                                  `/financials/vat-rules/${v._id}`,
+                                  { method: "DELETE" }
+                                );
                                 toast.success("Deleted");
                                 await load();
                               } catch (err) {
@@ -490,7 +714,7 @@ export default function FinancialsPage() {
             </TabsContent>
 
             <TabsContent value="offers">
-              <div className="grid gap-6 xl:grid-cols-[340px_1fr]">
+              <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
                 <Card>
                   <CardHeader>
                     <CardTitle>
@@ -504,7 +728,10 @@ export default function FinancialsPage() {
                         <Input
                           value={offerForm.name}
                           onChange={(e) =>
-                            setOfferForm({ ...offerForm, name: e.target.value })
+                            setOfferForm({
+                              ...offerForm,
+                              name: e.target.value,
+                            })
                           }
                           required
                         />
@@ -546,6 +773,14 @@ export default function FinancialsPage() {
                           />
                         </div>
                       </div>
+                      <ScopeFields
+                        value={offerForm}
+                        onChange={(scope) =>
+                          setOfferForm((prev) => ({ ...prev, ...scope }))
+                        }
+                        categories={categories}
+                        products={products}
+                      />
                       <label className="flex items-center gap-2 text-sm font-semibold">
                         <input
                           type="checkbox"
@@ -559,18 +794,45 @@ export default function FinancialsPage() {
                         />
                         Active
                       </label>
-                      <Button type="submit">
-                        {offerEdit ? "Update" : "Create"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button type="submit">
+                          {offerEdit ? "Update" : "Create"}
+                        </Button>
+                        {offerEdit && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                              setOfferEdit(null);
+                              setOfferForm({
+                                name: "",
+                                type: "percent",
+                                value: "",
+                                isActive: true,
+                                ...emptyScope,
+                              });
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
                     </form>
                   </CardContent>
                 </Card>
                 <div className="space-y-3">
+                  {offers.length === 0 && (
+                    <Card>
+                      <CardContent className="p-6 text-sm text-[var(--secondary)]">
+                        No offers yet.
+                      </CardContent>
+                    </Card>
+                  )}
                   {offers.map((o) => (
                     <Card key={o._id}>
                       <CardContent className="flex items-center justify-between gap-3 p-4">
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <p className="font-bold">{o.name}</p>
                             <Badge variant={o.isActive ? "success" : "outline"}>
                               {o.isActive ? "Active" : "Off"}
@@ -580,7 +842,7 @@ export default function FinancialsPage() {
                             {o.type === "percent"
                               ? `${o.value}% off`
                               : `${formatBDT(o.value)} off`}{" "}
-                            · {o.appliesTo}
+                            · {scopeLabel(o)}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -593,8 +855,10 @@ export default function FinancialsPage() {
                                 name: o.name,
                                 type: o.type,
                                 value: String(o.value),
-                                appliesTo: o.appliesTo || "all",
                                 isActive: o.isActive,
+                                appliesTo: (o.appliesTo || "all") as Scope,
+                                categoryId: idOf(o.categoryId),
+                                productId: idOf(o.productId),
                               });
                             }}
                           >

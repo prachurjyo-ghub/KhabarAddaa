@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { FiCheck, FiPhone } from "react-icons/fi";
@@ -9,6 +11,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-nav";
 import { ScrollProgress } from "@/components/scroll-progress";
+import { useAuth } from "@/components/auth-provider";
 import { ease } from "@/components/motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +28,8 @@ type Slot = {
 };
 
 export default function BookPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [date, setDate] = useState("");
   const [guests, setGuests] = useState(2);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -39,13 +44,26 @@ export default function BookPage() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      toast.message("Please log in to reserve a table");
+      router.replace("/login?next=/book");
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    setName(user.name || "");
+    setPhone(user.phone || "");
+  }, [user]);
+
+  useEffect(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setDate(tomorrow.toISOString().slice(0, 10));
   }, []);
 
   useEffect(() => {
-    if (!date) return;
+    if (!date || !user) return;
     setSelected(null);
     setDone(false);
 
@@ -72,12 +90,13 @@ export default function BookPage() {
       })
       .catch(() => setSlots([]))
       .finally(() => setLoadingSlots(false));
-  }, [date, guests]);
+  }, [date, guests, user]);
 
   const openSlots = useMemo(() => slots.filter((s) => s.available), [slots]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!user) return;
     if (largeParty) return;
     if (!selected) {
       toast.error("Please choose a time");
@@ -85,11 +104,12 @@ export default function BookPage() {
     }
     setBusy(true);
     try {
-      await apiFetch("/reservations/public/bookings", {
+      await apiFetch("/reservations/public/bookings/authenticated", {
         method: "POST",
         body: JSON.stringify({
           customerName: name,
           customerPhone: phone,
+          customerEmail: user.email || "",
           guests,
           date,
           startMinutes: selected.startMinutes,
@@ -104,6 +124,19 @@ export default function BookPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (authLoading || !user) {
+    return (
+      <div className="page-pad min-h-screen bg-[var(--background)]">
+        <ScrollProgress />
+        <SiteHeader transparent />
+        <div className="mx-auto max-w-xl space-y-4 px-4 pb-12 pt-28">
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-72 w-full rounded-2xl" />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -168,18 +201,21 @@ export default function BookPage() {
               {date}
               {selected ? ` · ${selected.label}` : ""}
             </p>
-            <Button
-              className="mt-7"
-              onClick={() => {
-                setDone(false);
-                setSelected(null);
-                setName("");
-                setPhone("");
-                setNote("");
-              }}
-            >
-              Make another booking
-            </Button>
+            <div className="mt-7 flex flex-wrap justify-center gap-2">
+              <Button asChild>
+                <Link href="/account">View my reservations</Link>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDone(false);
+                  setSelected(null);
+                  setNote("");
+                }}
+              >
+                Book again
+              </Button>
+            </div>
           </motion.div>
         ) : (
           <form onSubmit={onSubmit} className="gold-frame space-y-6 p-6 md:p-8">
