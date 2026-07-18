@@ -152,6 +152,10 @@ export default function MenuItemsPage() {
     () => items.filter((i) => i.homepageBadge === "popular").length,
     [items]
   );
+  const featuredCount = useMemo(
+    () => items.filter((i) => i.isFeatured).length,
+    [items]
+  );
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -437,7 +441,7 @@ export default function MenuItemsPage() {
                         patchForm({ isFeatured: e.target.checked })
                       }
                     />
-                    Featured
+                    Featured ({featuredCount}/3)
                   </label>
                   <label className="flex items-center gap-2 text-sm font-semibold">
                     <input

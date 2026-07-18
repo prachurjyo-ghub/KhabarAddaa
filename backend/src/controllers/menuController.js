@@ -109,6 +109,7 @@ async function listStaffMenuItems(req, res) {
 }
 
 const MAX_POPULAR_DISHES = 6;
+const MAX_FEATURED_DISHES = 3;
 
 async function assertPopularSlotAvailable(excludeId) {
   const q = { homepageBadge: "popular" };
@@ -118,6 +119,21 @@ async function assertPopularSlotAvailable(excludeId) {
     throw new ApiError(
       400,
       `Six popular dishes are already added. Remove one before adding another.`
+    );
+  }
+}
+
+/** Keep Featured Menu at 3 cards — demote oldest when a new one is featured. */
+async function ensureFeaturedCapacity(excludeId) {
+  const q = { isFeatured: true };
+  if (excludeId) q._id = { $ne: excludeId };
+  const featured = await MenuItem.find(q).sort({ updatedAt: 1 });
+  const overflow = featured.length - (MAX_FEATURED_DISHES - 1);
+  if (overflow > 0) {
+    const demoteIds = featured.slice(0, overflow).map((row) => row._id);
+    await MenuItem.updateMany(
+      { _id: { $in: demoteIds } },
+      { $set: { isFeatured: false } }
     );
   }
 }
@@ -134,6 +150,10 @@ async function createMenuItem(req, res) {
   if (homepageBadge === "popular") {
     await assertPopularSlotAvailable();
   }
+  const isFeatured = Boolean(body.isFeatured);
+  if (isFeatured) {
+    await ensureFeaturedCapacity();
+  }
   const item = await MenuItem.create({
     slug,
     name: String(body.name).trim(),
@@ -142,7 +162,7 @@ async function createMenuItem(req, res) {
     price: Number(body.price),
     image: body.image || "",
     tags: Array.isArray(body.tags) ? body.tags : [],
-    isFeatured: Boolean(body.isFeatured),
+    isFeatured,
     homepageBadge,
     customizable: Boolean(body.customizable),
     sizes: Array.isArray(body.sizes) ? body.sizes : [],
@@ -164,6 +184,11 @@ async function updateMenuItem(req, res) {
   ) {
     await assertPopularSlotAvailable(item._id);
   }
+  const becomingFeatured =
+    body.isFeatured === true || body.isFeatured === "true";
+  if (becomingFeatured && !item.isFeatured) {
+    await ensureFeaturedCapacity(item._id);
+  }
   const fields = [
     "name",
     "description",
@@ -180,9 +205,17 @@ async function updateMenuItem(req, res) {
     "isActive",
   ];
   for (const key of fields) {
-    if (body[key] !== undefined) item[key] = body[key];
+    if (body[key] !== undefined) {
+      if (key === "isFeatured") {
+        item.isFeatured = Boolean(body.isFeatured);
+      } else {
+        item[key] = body[key];
+      }
+    }
   }
   if (body.slug) item.slug = slugify(body.slug);
+  // Bump updatedAt when featuring so homepage sorts newest featured first
+  if (becomingFeatured) item.markModified("isFeatured");
   await item.save();
   await item.populate("category", "name");
   return sendSuccess(res, { item }, "Menu item updated");

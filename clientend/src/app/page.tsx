@@ -46,6 +46,7 @@ type ApiMenuItem = {
   description: string;
   isFeatured: boolean;
   homepageBadge: string;
+  updatedAt?: string;
 };
 
 type GalleryImage = { _id: string; image: string; alt: string; caption: string };
@@ -172,24 +173,34 @@ export default function HomePage() {
     apiFetch<{ items: ApiMenuItem[] }>("/menu/public")
       .then((data) => {
         const items = data.items || [];
+        const byNewest = (a: ApiMenuItem, b: ApiMenuItem) =>
+          new Date(b.updatedAt || 0).getTime() -
+          new Date(a.updatedAt || 0).getTime();
+
         const featuredItems = items
           .filter((i) => i.isFeatured)
+          .sort(byNewest)
           .slice(0, 3)
           .map(toShowcase);
         const premiumItems = items
           .filter((i) => i.homepageBadge === "premium")
+          .sort(byNewest)
           .slice(0, 3)
           .map(toShowcase);
         const popularItems = items
           .filter((i) => i.homepageBadge === "popular")
+          .sort(byNewest)
           .slice(0, 6)
           .map(toShowcase);
         const chefItems = items
           .filter((i) => i.homepageBadge === "chef-special")
+          .sort(byNewest)
           .slice(0, 3)
           .map(toShowcase);
 
+        // Always sync from API when the request succeeds (no stale static leftovers)
         if (featuredItems.length) setFeatured(featuredItems);
+        else setFeatured([]);
         if (premiumItems.length) setPremium(premiumItems);
         if (popularItems.length) setPopular(popularItems);
         if (chefItems.length) setChefSpecials(chefItems);
@@ -280,6 +291,7 @@ export default function HomePage() {
       </section>
 
       {/* ——— FEATURED MENU ——— */}
+      {featured.length > 0 && (
       <section id="featured" className="mx-auto max-w-6xl px-4 py-20 md:py-28">
         <Reveal>
           <SectionTitle>Featured Menu</SectionTitle>
@@ -336,6 +348,7 @@ export default function HomePage() {
           ))}
         </Stagger>
       </section>
+      )}
 
       {/* ——— PREMIUM DISHES ——— */}
       <section className="mx-auto max-w-6xl px-4 pb-16 md:pb-24">
