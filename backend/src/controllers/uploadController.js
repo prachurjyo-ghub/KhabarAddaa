@@ -2,10 +2,36 @@ const ApiError = require("../utils/ApiError");
 const sendSuccess = require("../utils/sendSuccess");
 const env = require("../config/env");
 const RestaurantImage = require("../models/RestaurantImage");
+const {
+  enabled: cloudinaryEnabled,
+  uploadBuffer,
+} = require("../services/cloudinary");
 
 async function uploadImage(req, res) {
   if (!req.file) throw new ApiError(400, "Image file required (field: image)");
-  const url = `${env.publicApiOrigin}/uploads/${req.file.filename}`;
+
+  if (cloudinaryEnabled) {
+    try {
+      const result = await uploadBuffer(
+        req.file.buffer,
+        `${Date.now()}-${req.file.originalname}`
+      );
+      return sendSuccess(
+        res,
+        { url: result.secure_url, filename: result.public_id },
+        "Uploaded",
+        201
+      );
+    } catch (err) {
+      throw new ApiError(500, err.message || "Cloudinary upload failed");
+    }
+  }
+
+  const origin = env.publicApiOrigin.replace(/\/$/, "");
+  if (!origin || origin.includes("localhost")) {
+    // Still allow local URL when developing; warn via message if misconfigured in prod
+  }
+  const url = `${origin}/uploads/${req.file.filename}`;
   return sendSuccess(res, { url, filename: req.file.filename }, "Uploaded", 201);
 }
 

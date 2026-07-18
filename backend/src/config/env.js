@@ -9,6 +9,11 @@ const env = {
   adminUrl: process.env.ADMIN_URL || "http://localhost:3000",
   clientUrl: process.env.CLIENT_URL || "http://localhost:3001",
   publicApiOrigin: process.env.PUBLIC_API_ORIGIN || "http://localhost:5001",
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+    apiKey: process.env.CLOUDINARY_API_KEY || "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || "",
+  },
   seedSuperAdmin: {
     email: process.env.SEED_SUPER_ADMIN_EMAIL || "admin@khabaradda.com",
     password: process.env.SEED_SUPER_ADMIN_PASSWORD || "admin123",
