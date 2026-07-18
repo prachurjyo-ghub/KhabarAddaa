@@ -1,7 +1,8 @@
 require("dotenv").config();
 
 const env = {
-  port: Number(process.env.BACKEND_PORT) || 5001,
+  // Prefer platform PORT (Render/Railway); fall back to BACKEND_PORT for local
+  port: Number(process.env.PORT || process.env.BACKEND_PORT) || 5001,
   mongodbUri: process.env.MONGODB_URI || "",
   jwtSecret: process.env.JWT_SECRET || "dev-insecure-secret-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
