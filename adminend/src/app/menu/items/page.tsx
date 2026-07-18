@@ -73,6 +73,11 @@ export default function MenuItemsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  /** Always merge into latest form — avoids wiping name/price/category after select/upload */
+  function patchForm(patch: Partial<typeof emptyForm>) {
+    setForm((prev) => ({ ...prev, ...patch }));
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -150,7 +155,10 @@ export default function MenuItemsPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.category || form.price === "") {
+    const name = form.name.trim();
+    const category = form.category.trim();
+    const priceNum = Number(form.price);
+    if (!name || !category || form.price === "" || Number.isNaN(priceNum)) {
       toast.error("Name, category, and price are required");
       return;
     }
@@ -172,10 +180,10 @@ export default function MenuItemsPage() {
     setSaving(true);
     try {
       const payload = {
-        name: form.name,
+        name,
         description: form.description,
-        category: form.category,
-        price: Number(form.price),
+        category,
+        price: priceNum,
         image: form.image,
         isFeatured: form.isFeatured,
         homepageBadge: form.homepageBadge,
@@ -349,7 +357,7 @@ export default function MenuItemsPage() {
                   <Label>Name</Label>
                   <Input
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => patchForm({ name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
@@ -357,7 +365,7 @@ export default function MenuItemsPage() {
                   <Textarea
                     value={form.description}
                     onChange={(e) =>
-                      setForm({ ...form, description: e.target.value })
+                      patchForm({ description: e.target.value })
                     }
                   />
                 </div>
@@ -365,7 +373,7 @@ export default function MenuItemsPage() {
                   <Label>Category</Label>
                   <Select
                     value={form.category || undefined}
-                    onValueChange={(v) => setForm({ ...form, category: v })}
+                    onValueChange={(v) => patchForm({ category: v })}
                   >
                     <SelectTrigger>
                       <SelectValue
@@ -392,18 +400,14 @@ export default function MenuItemsPage() {
                     type="number"
                     min={0}
                     value={form.price}
-                    onChange={(e) =>
-                      setForm({ ...form, price: e.target.value })
-                    }
+                    onChange={(e) => patchForm({ price: e.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
                   <Label>Image URL</Label>
                   <Input
                     value={form.image}
-                    onChange={(e) =>
-                      setForm({ ...form, image: e.target.value })
-                    }
+                    onChange={(e) => patchForm({ image: e.target.value })}
                     placeholder="Paste URL or upload"
                   />
                   <Input
@@ -414,7 +418,7 @@ export default function MenuItemsPage() {
                       if (!file) return;
                       try {
                         const url = await uploadImage(file);
-                        setForm((f) => ({ ...f, image: url }));
+                        patchForm({ image: url });
                         toast.success("Image uploaded");
                       } catch (err) {
                         toast.error(
@@ -430,7 +434,7 @@ export default function MenuItemsPage() {
                       type="checkbox"
                       checked={form.isFeatured}
                       onChange={(e) =>
-                        setForm({ ...form, isFeatured: e.target.checked })
+                        patchForm({ isFeatured: e.target.checked })
                       }
                     />
                     Featured
@@ -440,7 +444,7 @@ export default function MenuItemsPage() {
                       type="checkbox"
                       checked={form.customizable}
                       onChange={(e) =>
-                        setForm({ ...form, customizable: e.target.checked })
+                        patchForm({ customizable: e.target.checked })
                       }
                     />
                     Customizable
@@ -466,7 +470,7 @@ export default function MenuItemsPage() {
                         );
                         return;
                       }
-                      setForm({ ...form, homepageBadge: next });
+                      patchForm({ homepageBadge: next });
                     }}
                   >
                     <SelectTrigger>
@@ -496,7 +500,7 @@ export default function MenuItemsPage() {
                   <Select
                     value={form.status}
                     onValueChange={(v) =>
-                      setForm({ ...form, status: v as MenuItem["status"] })
+                      patchForm({ status: v as MenuItem["status"] })
                     }
                   >
                     <SelectTrigger>
@@ -516,7 +520,7 @@ export default function MenuItemsPage() {
                       <Textarea
                         value={form.sizesText}
                         onChange={(e) =>
-                          setForm({ ...form, sizesText: e.target.value })
+                          patchForm({ sizesText: e.target.value })
                         }
                         placeholder={"Regular|0\nLarge|50"}
                       />
@@ -526,7 +530,7 @@ export default function MenuItemsPage() {
                       <Textarea
                         value={form.toppingsText}
                         onChange={(e) =>
-                          setForm({ ...form, toppingsText: e.target.value })
+                          patchForm({ toppingsText: e.target.value })
                         }
                         placeholder={"Extra Cheese|40"}
                       />

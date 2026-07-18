@@ -24,7 +24,12 @@ export async function apiFetch<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const headers = new Headers(options.headers || {});
-  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
+  // Let the browser set multipart boundary for FormData
+  if (isFormData) {
+    headers.delete("Content-Type");
+  } else if (!headers.has("Content-Type") && options.body != null) {
     headers.set("Content-Type", "application/json");
   }
   const token = getStaffToken();
