@@ -24,7 +24,7 @@ export const siteConfig = {
   addressCountry: "BD",
   phone: env("NEXT_PUBLIC_MANAGER_PHONE", "01700000000"),
   email: env("NEXT_PUBLIC_CONTACT_EMAIL", ""),
-  ogImage: "/Food_Items_Images/hero-main.png",
+  ogImage: "/Food_Items_Images/hero-main.jpg",
   developer: {
     name: env("NEXT_PUBLIC_DEVELOPER_NAME", "Golam Azizul Hakim"),
     label: env("NEXT_PUBLIC_DEVELOPER_LABEL", "Developed by"),

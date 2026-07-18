@@ -148,7 +148,7 @@ function LoginPageContent() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       <Image
-        src="/Food_Items_Images/hero-main.png"
+        src="/Food_Items_Images/hero-main.jpg"
         alt="KhabarAdda dining"
         fill
         priority

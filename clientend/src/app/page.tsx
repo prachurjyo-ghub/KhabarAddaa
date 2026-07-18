@@ -2,18 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useReducedMotion,
-} from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { FiStar } from "react-icons/fi";
 import { FaLeaf, FaPepperHot } from "react-icons/fa";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-nav";
-import { ScrollProgress } from "@/components/scroll-progress";
 import { ScrollCue } from "@/components/scroll-cue";
 import {
   Reveal,
@@ -104,9 +98,11 @@ function DietIcons({ dish }: { dish: ShowcaseDish }) {
 function OverlayDishCard({
   dish,
   reduce,
+  delay = 0,
 }: {
   dish: ShowcaseDish;
   reduce: boolean | null;
+  delay?: number;
 }) {
   return (
     <Link
@@ -119,34 +115,34 @@ function OverlayDishCard({
         alt={dish.name}
         className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-black from-0% via-black/80 via-[28%] to-transparent to-[65%]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black from-0% via-black/85 via-[32%] to-transparent to-[72%]" />
 
       <div className="relative flex h-full min-h-[185px] items-center px-6 py-7 md:min-h-[240px] md:px-10 md:py-9">
-        <div className="max-w-[min(100%,22rem)] md:max-w-md">
+        <div className="text-overlay-panel max-w-[min(100%,22rem)] px-3 py-3 md:max-w-md md:px-4 md:py-4">
           <motion.h3
-            className="font-[family-name:var(--font-display)] text-xl font-semibold text-gold-glow md:text-3xl"
+            className="text-overlay-title font-[family-name:var(--font-display)] text-xl leading-tight md:text-3xl"
             initial={reduce ? false : { opacity: 0, x: -56 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.45 }}
-            transition={{ duration: 0.7, ease }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.75, delay, ease }}
           >
             {dish.name}
           </motion.h3>
           <motion.p
-            className="mt-3 text-sm font-light leading-relaxed text-white/80 md:text-base"
+            className="text-overlay-body mt-3 text-sm leading-relaxed md:text-base"
             initial={reduce ? false : { opacity: 0, x: -48 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.45 }}
-            transition={{ duration: 0.7, delay: 0.12, ease }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.75, delay: delay + 0.12, ease }}
           >
             {dish.description}
           </motion.p>
           <motion.p
-            className="mt-5 text-sm font-semibold tracking-wide text-[var(--gold-bright)] md:text-base"
+            className="text-overlay-price mt-5 text-sm tracking-wide md:text-base"
             initial={reduce ? false : { opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.45 }}
-            transition={{ duration: 0.65, delay: 0.22, ease }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.7, delay: delay + 0.22, ease }}
           >
             {formatBDT(dish.price)}
           </motion.p>
@@ -158,9 +154,6 @@ function OverlayDishCard({
 
 export default function HomePage() {
   const reduce = useReducedMotion();
-  const { scrollY } = useScroll();
-  const heroY = useTransform(scrollY, [0, 500], [0, reduce ? 0 : 90]);
-  const heroScale = useTransform(scrollY, [0, 500], [1, reduce ? 1 : 1.06]);
 
   const [featured, setFeatured] = useState<ShowcaseDish[]>(FEATURED_DISHES);
   const [premium, setPremium] = useState<ShowcaseDish[]>(PREMIUM_DISHES);
@@ -198,9 +191,8 @@ export default function HomePage() {
           .slice(0, 3)
           .map(toShowcase);
 
-        // Always sync from API when the request succeeds (no stale static leftovers)
+        // Sync from API when present; keep local fallbacks if a section is empty
         if (featuredItems.length) setFeatured(featuredItems);
-        else setFeatured([]);
         if (premiumItems.length) setPremium(premiumItems);
         if (popularItems.length) setPopular(popularItems);
         if (chefItems.length) setChefSpecials(chefItems);
@@ -224,67 +216,65 @@ export default function HomePage() {
 
   return (
     <div className="page-pad min-h-screen overflow-x-hidden bg-[var(--background)]">
-      <ScrollProgress />
       <SiteHeader transparent />
 
       {/* ——— HERO ——— */}
       <section className="relative min-h-[100svh] w-full overflow-hidden">
-        <motion.div
-          className="absolute inset-0"
-          style={{ y: heroY, scale: heroScale }}
-        >
+        <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={HERO_IMAGE}
             alt="Signature seared steak"
+            fetchPriority="high"
+            decoding="async"
             className="h-full w-full object-cover object-[center_70%]"
           />
-        </motion.div>
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/45 to-black/80" />
         <div className="hero-gold-lines pointer-events-none absolute inset-0" />
 
         <div className="relative mx-auto flex min-h-[100svh] max-w-4xl flex-col items-center justify-center px-4 pb-24 pt-28 text-center">
           <motion.p
             className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-[0.06em] text-gold-glow sm:text-5xl md:text-6xl lg:text-7xl"
-            initial={reduce ? false : { opacity: 0, y: 28 }}
+            initial={reduce ? false : { opacity: 0, y: 36 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.85, ease }}
+            transition={{ duration: 0.75, ease }}
           >
             KhabarAdda
           </motion.p>
           <motion.h1
             className="mt-4 max-w-3xl font-[family-name:var(--font-display)] text-2xl font-medium leading-snug text-gold-glow sm:text-3xl md:text-4xl"
-            initial={reduce ? false : { opacity: 0, y: 24 }}
+            initial={reduce ? false : { opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.12, ease }}
+            transition={{ duration: 0.7, delay: 0.14, ease }}
           >
             Experience Culinary Excellence.
           </motion.h1>
           <motion.p
             className="mt-5 max-w-xl text-sm font-light leading-relaxed text-white/70 md:text-base"
-            initial={reduce ? false : { opacity: 0, y: 18 }}
+            initial={reduce ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.24, ease }}
+            transition={{ duration: 0.65, delay: 0.26, ease }}
           >
             A journey of flavor, artistry, and refined ambiance, crafted for the
             discerning palate.
           </motion.p>
           <motion.div
             className="mt-9 flex flex-wrap items-center justify-center gap-3"
-            initial={reduce ? false : { opacity: 0, y: 16 }}
+            initial={reduce ? false : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, delay: 0.36, ease }}
+            transition={{ duration: 0.6, delay: 0.4, ease }}
           >
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+            <div>
               <Button asChild size="lg">
                 <Link href="/book">Reserve a Table</Link>
               </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+            </div>
+            <div>
               <Button asChild size="lg" variant="outline">
                 <Link href="/menu">Explore Menu</Link>
               </Button>
-            </motion.div>
+            </div>
           </motion.div>
         </div>
         <ScrollCue href="#featured" />
@@ -298,8 +288,8 @@ export default function HomePage() {
         </Reveal>
 
         <Stagger className="mt-8 grid grid-cols-2 gap-3 md:mt-12 md:gap-6 lg:grid-cols-3">
-          {featured.map((dish) => (
-            <StaggerItem key={dish.id}>
+          {featured.map((dish, i) => (
+            <StaggerItem key={dish.id} index={i}>
               <MotionLinkHover>
                 <Link
                   href={dish.href}
@@ -326,19 +316,19 @@ export default function HomePage() {
                   </div>
                   <motion.h3
                     className="mt-3 text-center font-[family-name:var(--font-display)] text-sm font-semibold leading-tight text-white md:mt-5 md:text-[1.35rem]"
-                    initial={reduce ? false : { opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={reduce ? false : { opacity: 0, x: -28 }}
+                    whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: 0.15, duration: 0.5 }}
+                    transition={{ delay: 0.15, duration: 0.55, ease }}
                   >
                     {dish.name}
                   </motion.h3>
                   <motion.p
                     className="mt-2 hidden text-center text-sm font-light leading-relaxed text-white/50 md:block"
-                    initial={reduce ? false : { opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
+                    initial={reduce ? false : { opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: 0.25, duration: 0.5 }}
+                    transition={{ delay: 0.25, duration: 0.55, ease }}
                   >
                     {dish.description}
                   </motion.p>
@@ -358,9 +348,12 @@ export default function HomePage() {
 
         <div className="mt-12 space-y-6">
           {premium.map((dish, i) => (
-            <Reveal key={dish.id} delay={i * 0.08}>
-              <OverlayDishCard dish={dish} reduce={reduce} />
-            </Reveal>
+            <OverlayDishCard
+              key={dish.id}
+              dish={dish}
+              reduce={reduce}
+              delay={i * 0.06}
+            />
           ))}
         </div>
       </section>
@@ -372,8 +365,8 @@ export default function HomePage() {
         </Reveal>
 
         <Stagger className="mt-8 grid grid-cols-2 gap-3 md:mt-12 md:gap-6 lg:grid-cols-3">
-          {popular.map((dish) => (
-            <StaggerItem key={dish.id}>
+          {popular.map((dish, i) => (
+            <StaggerItem key={dish.id} index={i}>
               <MotionLinkHover>
                 <Link
                   href={dish.href}
@@ -424,9 +417,12 @@ export default function HomePage() {
 
         <div className="mt-12 space-y-6">
           {chefSpecials.map((dish, i) => (
-            <Reveal key={dish.id} delay={i * 0.08}>
-              <OverlayDishCard dish={dish} reduce={reduce} />
-            </Reveal>
+            <OverlayDishCard
+              key={dish.id}
+              dish={dish}
+              reduce={reduce}
+              delay={i * 0.06}
+            />
           ))}
         </div>
       </section>
@@ -438,8 +434,8 @@ export default function HomePage() {
         </Reveal>
 
         <Stagger className="mt-12 grid grid-cols-2 gap-3 md:gap-5">
-          {gallery.map((img) => (
-            <StaggerItem key={img.id}>
+          {gallery.map((img, i) => (
+            <StaggerItem key={img.id} index={i}>
               <motion.div
                 className="gold-frame overflow-hidden"
                 whileHover={reduce ? undefined : { scale: 1.015 }}
@@ -484,8 +480,8 @@ export default function HomePage() {
         </Reveal>
 
         <Stagger className="mt-10 grid gap-5 md:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
-            <StaggerItem key={t.id}>
+          {TESTIMONIALS.map((t, i) => (
+            <StaggerItem key={t.id} index={i}>
               <div className="gold-frame h-full px-5 py-6 text-center">
                 <p className="text-sm font-light leading-relaxed text-white/65">
                   &ldquo;{t.quote}&rdquo;

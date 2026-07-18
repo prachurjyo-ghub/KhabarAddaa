@@ -8,7 +8,6 @@ import { FiArrowLeft, FiMapPin, FiPhone, FiShoppingBag } from "react-icons/fi";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-nav";
-import { ScrollProgress } from "@/components/scroll-progress";
 import { useAuth } from "@/components/auth-provider";
 import { useCart } from "@/components/cart-provider";
 import { Button } from "@/components/ui/button";
@@ -132,7 +131,6 @@ export default function CheckoutPage() {
   if (loading || !user) {
     return (
       <div className="page-pad min-h-screen bg-[var(--background)]">
-        <ScrollProgress />
         <SiteHeader transparent />
         <div className="mx-auto grid max-w-5xl gap-6 px-4 pb-12 pt-24 md:grid-cols-[1.1fr_0.9fr] md:pt-28">
           <Skeleton className="h-72 w-full rounded-2xl" />
@@ -146,7 +144,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="page-pad min-h-screen bg-[var(--background)]">
-      <ScrollProgress />
       <SiteHeader transparent />
 
       <form

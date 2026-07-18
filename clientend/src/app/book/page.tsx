@@ -9,7 +9,6 @@ import { FiCheck, FiPhone } from "react-icons/fi";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-nav";
-import { ScrollProgress } from "@/components/scroll-progress";
 import { useAuth } from "@/components/auth-provider";
 import { ease } from "@/components/motion";
 import { Button } from "@/components/ui/button";
@@ -122,7 +121,6 @@ export default function BookPage() {
 
   return (
     <div className="page-pad min-h-screen bg-[var(--background)]">
-      <ScrollProgress />
       <SiteHeader transparent />
 
       <section className="relative h-[38vh] min-h-[260px] overflow-hidden">

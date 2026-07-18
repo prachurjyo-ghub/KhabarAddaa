@@ -1,4 +1,4 @@
-export const HERO_IMAGE = "/Food_Items_Images/hero-main.png";
+export const HERO_IMAGE = "/Food_Items_Images/hero-main.jpg";
 
 export type ShowcaseDish = {
   id: string;
