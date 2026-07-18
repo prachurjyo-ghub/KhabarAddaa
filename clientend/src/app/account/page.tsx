@@ -199,7 +199,7 @@ export default function AccountPage() {
               <div className="rounded-xl border border-dashed border-[var(--gold)]/25 bg-[var(--surface-container-low)] px-5 py-14 text-center">
                 <FiCalendar className="mx-auto h-6 w-6 text-[var(--gold)]/50" />
                 <p className="mt-3 text-sm text-white/55">
-                  No reservations yet. Book a table after logging in.
+                  No reservations yet. Book a table and it will show up here.
                 </p>
                 <Button asChild className="mt-5" size="sm">
                   <Link href="/book">Reserve a table</Link>
