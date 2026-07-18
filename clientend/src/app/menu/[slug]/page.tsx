@@ -8,7 +8,6 @@ import { FiArrowLeft, FiMinus, FiPlus } from "react-icons/fi";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-nav";
-import { ScrollProgress } from "@/components/scroll-progress";
 import { FoodImage } from "@/components/food-image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -163,7 +162,6 @@ export default function MenuItemPage() {
   if (loading) {
     return (
       <div className="page-pad min-h-screen bg-[var(--background)]">
-        <ScrollProgress />
         <SiteHeader transparent />
         <div className="mx-auto max-w-6xl space-y-4 px-4 pb-16 pt-24 md:grid md:grid-cols-2 md:gap-8 md:space-y-0 md:pt-28">
           <Skeleton className="h-[220px] w-full rounded-2xl md:aspect-[4/5] md:h-auto" />
@@ -181,7 +179,6 @@ export default function MenuItemPage() {
   if (error || !item) {
     return (
       <div className="page-pad min-h-screen bg-[var(--background)]">
-        <ScrollProgress />
         <SiteHeader transparent />
         <div className="mx-auto max-w-lg px-4 pb-20 pt-32 text-center">
           <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-gold-glow">
@@ -215,7 +212,6 @@ export default function MenuItemPage() {
 
   return (
     <div className="page-pad min-h-screen bg-[var(--background)]">
-      <ScrollProgress />
       <SiteHeader transparent />
 
       <div className="mx-auto max-w-6xl px-4 pb-3 pt-20 md:pb-6 md:pt-28">

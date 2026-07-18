@@ -16,7 +16,6 @@ import {
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-nav";
-import { ScrollProgress } from "@/components/scroll-progress";
 import { Reveal, ease } from "@/components/motion";
 import { FoodImage } from "@/components/food-image";
 import { useAuth } from "@/components/auth-provider";
@@ -183,7 +182,6 @@ function MenuPageContent() {
 
   return (
     <div className="page-pad min-h-screen bg-[var(--background)]">
-      <ScrollProgress />
       <SiteHeader transparent />
 
       <section className="relative min-h-[220px] overflow-hidden md:min-h-[240px]">
@@ -365,7 +363,7 @@ function MenuPageContent() {
                       asChild
                       variant="outline"
                       size="sm"
-                      className="h-8 flex-1 px-2 text-xs md:h-9 md:text-sm"
+                      className="btn-glass h-8 flex-1 px-2 text-xs md:h-9 md:text-sm"
                     >
                       <Link href={`/menu/${item.slug}`}>Details</Link>
                     </Button>

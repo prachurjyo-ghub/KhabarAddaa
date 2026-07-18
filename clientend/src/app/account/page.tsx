@@ -7,7 +7,6 @@ import { FiCalendar, FiClock, FiShoppingBag, FiUser } from "react-icons/fi";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MobileBottomNav } from "@/components/mobile-nav";
-import { ScrollProgress } from "@/components/scroll-progress";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -115,7 +114,6 @@ export default function AccountPage() {
 
   return (
     <div className="page-pad min-h-screen bg-[var(--background)]">
-      <ScrollProgress />
       <SiteHeader transparent />
 
       <section className="relative overflow-hidden border-b border-[var(--outline-variant)]">
