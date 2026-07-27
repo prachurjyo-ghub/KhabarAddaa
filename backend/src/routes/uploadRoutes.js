@@ -1,7 +1,10 @@
 const express = require("express");
+const multer = require("multer");
 const asyncHandler = require("../utils/asyncHandler");
+const ApiError = require("../utils/ApiError");
+const sendSuccess = require("../utils/sendSuccess");
+const { createImageUpload } = require("../utils/upload");
 const uploadCtrl = require("../controllers/uploadController");
-const { upload } = require("../middleware/upload");
 const {
   authenticate,
   requireStaff,
@@ -9,16 +12,63 @@ const {
 } = require("../middleware/auth");
 
 const router = express.Router();
+const ALLOWED_FOLDERS = new Set(["menu", "categories", "gallery", "common"]);
 
 router.get("/gallery/public", asyncHandler(uploadCtrl.listPublicGallery));
 
-router.post(
-  "/",
-  authenticate,
-  requireStaff,
-  upload.single("image"),
-  asyncHandler(uploadCtrl.uploadImage)
-);
+function resolveFolder(rawFolder) {
+  const folder = String(rawFolder || "common")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, "");
+
+  if (!ALLOWED_FOLDERS.has(folder)) {
+    throw new ApiError(
+      400,
+      `Invalid upload folder. Allowed: ${[...ALLOWED_FOLDERS].join(", ")}`
+    );
+  }
+  return folder;
+}
+
+router.post("/", authenticate, requireStaff, (req, res, next) => {
+  let folder;
+  try {
+    folder = resolveFolder(req.query.folder);
+  } catch (error) {
+    next(error);
+    return;
+  }
+
+  const upload = createImageUpload({ folder, maxSizeKB: 700 });
+  upload.single("image")(req, res, (error) => {
+    if (error instanceof multer.MulterError) {
+      next(new ApiError(400, error.message));
+      return;
+    }
+    if (error) {
+      next(
+        error instanceof ApiError
+          ? error
+          : new ApiError(400, error.message || "Upload failed")
+      );
+      return;
+    }
+    if (!req.file) {
+      next(new ApiError(400, "Image file required (field: image)"));
+      return;
+    }
+
+    // Store only a portable relative path in MongoDB.
+    const url = `/uploads/${folder}/${req.file.filename}`;
+    sendSuccess(
+      res,
+      { url, path: url, folder, filename: req.file.filename },
+      "Uploaded",
+      201
+    );
+  });
+});
 
 router.get(
   "/gallery",

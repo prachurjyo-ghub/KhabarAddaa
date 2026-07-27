@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
+import { compressImageToMaxBytes } from "@/lib/compress-image";
+import { resolveMediaUrl } from "@/lib/media";
 
 type GalleryImage = {
   _id: string;
@@ -42,9 +44,10 @@ export default function OurPlacePage() {
   }, [load]);
 
   async function uploadFile(file: File) {
+    const compressed = await compressImageToMaxBytes(file);
     const fd = new FormData();
-    fd.append("image", file);
-    const data = await apiFetch<{ url: string }>("/uploads", {
+    fd.append("image", compressed);
+    const data = await apiFetch<{ url: string }>("/uploads?folder=gallery", {
       method: "POST",
       body: fd,
       headers: {},
@@ -55,7 +58,7 @@ export default function OurPlacePage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form.image.trim()) {
-      toast.error("Image URL or upload required");
+      toast.error("Choose an image first");
       return;
     }
     setSaving(true);
@@ -109,12 +112,7 @@ export default function OurPlacePage() {
             <CardContent>
               <form onSubmit={onSubmit} className="space-y-3">
                 <div className="space-y-1">
-                  <Label>Image URL</Label>
-                  <Input
-                    value={form.image}
-                    onChange={(e) => setForm({ ...form, image: e.target.value })}
-                    placeholder="Paste URL or upload below"
-                  />
+                  <Label>Gallery image</Label>
                   <Input
                     type="file"
                     accept="image/*"
@@ -132,6 +130,9 @@ export default function OurPlacePage() {
                       }
                     }}
                   />
+                  <p className="text-xs text-[var(--secondary)]">
+                    Choose an image. Large photos are compressed to about 700KB.
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <Label>Alt text</Label>
@@ -153,7 +154,7 @@ export default function OurPlacePage() {
                   <div className="overflow-hidden rounded-lg bg-[var(--surface-container)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={form.image}
+                      src={resolveMediaUrl(form.image)}
                       alt="Preview"
                       className="h-40 w-full object-cover"
                     />
@@ -186,7 +187,7 @@ export default function OurPlacePage() {
                   <div className="aspect-[4/3] bg-[var(--surface-container)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={img.image}
+                      src={resolveMediaUrl(img.image)}
                       alt={img.alt || img.caption || "Gallery"}
                       className="h-full w-full object-cover"
                     />

@@ -20,6 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
+import { compressImageToMaxBytes } from "@/lib/compress-image";
+import { resolveMediaUrl } from "@/lib/media";
 import { formatBDT } from "@/lib/utils";
 
 type Category = { _id: string; name: string; isActive: boolean };
@@ -146,9 +148,10 @@ export default function MenuItemsPage() {
   }, [items, categoryFilter, statusFilter, search, sort]);
 
   async function uploadImage(file: File) {
+    const compressed = await compressImageToMaxBytes(file);
     const fd = new FormData();
-    fd.append("image", file);
-    const data = await apiFetch<{ url: string }>("/uploads", {
+    fd.append("image", compressed);
+    const data = await apiFetch<{ url: string }>("/uploads?folder=menu", {
       method: "POST",
       body: fd,
       headers: {},
@@ -470,12 +473,7 @@ export default function MenuItemsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Image URL</Label>
-                  <Input
-                    value={form.image}
-                    onChange={(e) => patchForm({ image: e.target.value })}
-                    placeholder="Paste URL or upload"
-                  />
+                  <Label>Dish image</Label>
                   <Input
                     type="file"
                     accept="image/*"
@@ -493,6 +491,19 @@ export default function MenuItemsPage() {
                       }
                     }}
                   />
+                  <p className="text-xs text-[var(--secondary)]">
+                    Choose an image. Large photos are compressed to about 700KB.
+                  </p>
+                  {form.image && (
+                    <div className="h-32 overflow-hidden rounded-lg bg-[var(--surface-container)]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={resolveMediaUrl(form.image)}
+                        alt="Dish preview"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <label className="flex items-center gap-2 text-sm font-semibold">
@@ -790,7 +801,7 @@ export default function MenuItemsPage() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={
-                          item.image ||
+                          resolveMediaUrl(item.image) ||
                           "/Food_Items_Images/pasta.jpg"
                         }
                         alt={item.name}

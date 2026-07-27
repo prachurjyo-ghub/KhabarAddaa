@@ -1,9 +1,9 @@
-const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const env = require("./config/env");
+const { uploadsRoot } = require("./utils/upload");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 const healthRoutes = require("./routes/healthRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -16,9 +16,37 @@ const uploadRoutes = require("./routes/uploadRoutes");
 
 const app = express();
 
+function isLocalDevOrigin(origin) {
+  try {
+    const hostname = new URL(origin).hostname;
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0" ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("172.")
+    );
+  } catch {
+    return false;
+  }
+}
+
+app.set("trust proxy", 1);
+
 app.use(
   cors({
-    origin: [env.adminUrl, env.clientUrl],
+    origin(origin, callback) {
+      if (!origin || env.allowedOrigins.includes(origin.replace(/\/+$/, ""))) {
+        callback(null, true);
+        return;
+      }
+      if (env.nodeEnv !== "production" && isLocalDevOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );
@@ -26,7 +54,15 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", express.static(uploadsRoot));
+
+app.get("/", (_req, res) => {
+  res.json({ success: true, message: "KhabarAdda API is running" });
+});
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({ success: true, status: "ok" });
+});
 
 app.use("/api/v1/health", healthRoutes);
 app.use("/api/v1/auth", authRoutes);

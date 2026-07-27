@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { absoluteUrl, siteConfig } from "@/lib/site-config";
+import { resolveMediaUrl } from "@/lib/media";
 
 type PageSeo = {
   title: string;
@@ -17,7 +18,9 @@ export function buildMetadata({
   noIndex = false,
 }: PageSeo): Metadata {
   const url = absoluteUrl(path);
-  const imageUrl = absoluteUrl(image);
+  const imageUrl = image.startsWith("/uploads/")
+    ? resolveMediaUrl(image)
+    : absoluteUrl(image);
   const fullTitle =
     title === siteConfig.name
       ? `${siteConfig.name} | ${siteConfig.tagline}`

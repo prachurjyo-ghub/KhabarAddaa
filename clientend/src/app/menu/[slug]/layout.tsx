@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site-config";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+import { resolveMediaUrl } from "@/lib/media";
+import { API_URL } from "@/lib/api";
 
 type MenuItem = {
   name: string;
@@ -74,7 +73,11 @@ export default async function MenuItemLayout({
         description:
           item.description ||
           `${item.name} from KhabarAdda, Dhanmondi, Dhaka.`,
-        image: item.image ? absoluteUrl(item.image) : undefined,
+        image: item.image
+          ? item.image.startsWith("/uploads/")
+            ? resolveMediaUrl(item.image)
+            : absoluteUrl(item.image)
+          : undefined,
         offers: item.price
           ? {
               "@type": "Offer",

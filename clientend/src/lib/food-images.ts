@@ -1,3 +1,5 @@
+import { resolveMediaUrl } from "@/lib/media";
+
 /** Fallback map when DB image is empty */
 const FOOD_IMAGES: Record<string, string> = {
   "house pasta": "/Food_Items_Images/pasta.jpg",
@@ -48,11 +50,15 @@ export function resolveFoodImage(
 ): string {
   const src = String(image || "").trim();
   // Prefer explicit DB / uploaded paths first
-  if (
-    src &&
-    (src.startsWith("http") || src.startsWith("/") || src.startsWith("data:"))
-  ) {
-    return src;
+  if (src) {
+    const resolved = resolveMediaUrl(src);
+    if (
+      resolved.startsWith("http") ||
+      resolved.startsWith("/") ||
+      resolved.startsWith("data:")
+    ) {
+      return resolved;
+    }
   }
 
   const keyName = String(name || "").toLowerCase().trim();

@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 import { resolveFoodImage } from "@/lib/food-images";
+import { resolveMediaUrl } from "@/lib/media";
 import { formatBDT } from "@/lib/utils";
 import {
   HERO_IMAGE,
@@ -205,7 +206,7 @@ export default function HomePage() {
           setGallery(
             d.images.slice(0, 4).map((g) => ({
               id: g._id,
-              src: g.image,
+              src: resolveMediaUrl(g.image),
               alt: g.alt || g.caption || "Our place",
             }))
           );

@@ -1,4 +1,8 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+if (!configuredApiUrl) {
+  throw new Error("NEXT_PUBLIC_API_URL is not configured");
+}
+const API_URL = configuredApiUrl.replace(/\/+$/, "");
 const TOKEN_KEY = "khabaradda_staff_token";
 
 export type ApiEnvelope<T> = {

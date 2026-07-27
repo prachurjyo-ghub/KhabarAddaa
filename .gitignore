@@ -68,9 +68,9 @@ node_modules/
 **/.env
 **/.env.local
 
-# Backend uploads (keep folder, ignore files)
-backend/uploads/*
-!backend/uploads/.gitkeep
+# Uploaded images use backend/uploads/{menu,categories,gallery,common}.
+# Keep them versionable like the PizzaHub structure; ignore only OS junk.
+backend/uploads/**/.DS_Store
 
 # Next.js
 **/.next/

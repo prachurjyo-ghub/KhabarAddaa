@@ -1,8 +1,6 @@
 import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/site-config";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1";
+import { API_URL } from "@/lib/api";
 
 type MenuItem = { slug: string; updatedAt?: string };
 
