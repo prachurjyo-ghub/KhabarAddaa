@@ -52,4 +52,12 @@ const menuItemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+menuItemSchema.index(
+  { image: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { image: { $type: "string", $gt: "" } },
+  }
+);
+
 module.exports = mongoose.model("MenuItem", menuItemSchema);

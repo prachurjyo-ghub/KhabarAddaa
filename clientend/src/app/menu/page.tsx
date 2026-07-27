@@ -328,6 +328,11 @@ function MenuPageContent() {
                   className="pointer-events-none absolute inset-0 h-full w-full"
                   imgClassName="transition-transform duration-500 group-hover:scale-[1.03]"
                 />
+                <Link
+                  href={`/menu/${item.slug}`}
+                  aria-label={`View ${item.name} details`}
+                  className="absolute inset-0 z-[3] rounded-[1.2rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--gold-bright)]"
+                />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/35 to-transparent" />
 
                 {item.customizable && (
@@ -358,7 +363,7 @@ function MenuPageContent() {
                   >
                     {item.name}
                   </h2>
-                  <div className="relative z-[3] flex gap-1.5 md:gap-2">
+                  <div className="relative z-[4] flex gap-1.5 md:gap-2">
                     <Button
                       asChild
                       variant="outline"

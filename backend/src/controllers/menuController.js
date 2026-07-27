@@ -111,8 +111,23 @@ async function listStaffMenuItems(req, res) {
 const MAX_POPULAR_DISHES = 6;
 const MAX_FEATURED_DISHES = 3;
 
+async function assertImageAvailable(image, excludeId) {
+  const normalized = String(image || "").trim();
+  if (!normalized) return;
+
+  const query = { image: normalized };
+  if (excludeId) query._id = { $ne: excludeId };
+  const existing = await MenuItem.findOne(query).select("name");
+  if (existing) {
+    throw new ApiError(
+      409,
+      `This image is already assigned to "${existing.name}". Upload a different image.`
+    );
+  }
+}
+
 async function assertPopularSlotAvailable(excludeId) {
-  const q = { homepageBadge: "popular" };
+  const q = { homepageBadge: "popular", isActive: true };
   if (excludeId) q._id = { $ne: excludeId };
   const count = await MenuItem.countDocuments(q);
   if (count >= MAX_POPULAR_DISHES) {
@@ -124,7 +139,7 @@ async function assertPopularSlotAvailable(excludeId) {
 }
 
 async function assertFeaturedSlotAvailable(excludeId) {
-  const q = { isFeatured: true };
+  const q = { isFeatured: true, isActive: true };
   if (excludeId) q._id = { $ne: excludeId };
   const count = await MenuItem.countDocuments(q);
   if (count >= MAX_FEATURED_DISHES) {
@@ -151,13 +166,15 @@ async function createMenuItem(req, res) {
   if (isFeatured) {
     await assertFeaturedSlotAvailable();
   }
+  const image = String(body.image || "").trim();
+  await assertImageAvailable(image);
   const item = await MenuItem.create({
     slug,
     name: String(body.name).trim(),
     description: body.description || "",
     category: body.category,
     price: Number(body.price),
-    image: body.image || "",
+    image,
     tags: Array.isArray(body.tags) ? body.tags : [],
     isFeatured,
     homepageBadge,
@@ -185,6 +202,13 @@ async function updateMenuItem(req, res) {
     body.isFeatured === true || body.isFeatured === "true";
   if (becomingFeatured && !item.isFeatured) {
     await assertFeaturedSlotAvailable(item._id);
+  }
+  if (body.image !== undefined) {
+    const image = String(body.image || "").trim();
+    if (image !== item.image) {
+      await assertImageAvailable(image, item._id);
+    }
+    body.image = image;
   }
   const fields = [
     "name",

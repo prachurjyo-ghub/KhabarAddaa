@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { FiArrowLeft, FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
@@ -83,6 +90,8 @@ export default function MenuItemsPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const pendingImageUpload = useRef<Promise<string> | null>(null);
 
   /** Always merge into latest form — avoids wiping name/price/category after select/upload */
   function patchForm(patch: Partial<typeof emptyForm>) {
@@ -212,12 +221,18 @@ export default function MenuItemsPage() {
 
     setSaving(true);
     try {
+      let image = form.image;
+      if (pendingImageUpload.current) {
+        toast.message("Waiting for the image upload to finish…");
+        image = await pendingImageUpload.current;
+      }
+
       const payload = {
         name,
         description: form.description,
         category,
         price: priceNum,
-        image: form.image,
+        image,
         isFeatured: form.isFeatured,
         homepageBadge,
         customizable: form.customizable,
@@ -265,6 +280,10 @@ export default function MenuItemsPage() {
   }
 
   function clearToNewItem() {
+    if (pendingImageUpload.current) {
+      toast.error("Wait for the image upload to finish first");
+      return;
+    }
     setEditingId(null);
     setForm({ ...emptyForm });
   }
@@ -477,22 +496,35 @@ export default function MenuItemsPage() {
                   <Input
                     type="file"
                     accept="image/*"
+                    disabled={uploadingImage || saving}
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
+                      const input = e.currentTarget;
+                      const upload = uploadImage(file);
+                      pendingImageUpload.current = upload;
+                      setUploadingImage(true);
                       try {
-                        const url = await uploadImage(file);
+                        const url = await upload;
                         patchForm({ image: url });
                         toast.success("Image uploaded");
                       } catch (err) {
                         toast.error(
                           err instanceof Error ? err.message : "Upload failed"
                         );
+                      } finally {
+                        if (pendingImageUpload.current === upload) {
+                          pendingImageUpload.current = null;
+                          setUploadingImage(false);
+                        }
+                        input.value = "";
                       }
                     }}
                   />
                   <p className="text-xs text-[var(--secondary)]">
-                    Choose an image. Large photos are compressed to about 700KB.
+                    {uploadingImage
+                      ? "Uploading image… Please wait before updating."
+                      : "Choose an image. Large photos are compressed to about 700KB."}
                   </p>
                   {form.image && (
                     <div className="h-32 overflow-hidden rounded-lg bg-[var(--surface-container)]">
@@ -754,8 +786,17 @@ export default function MenuItemsPage() {
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2">
-                  <Button type="submit" disabled={saving || !categories.length}>
-                    {saving ? "Saving…" : editingId ? "Update" : "Create"}
+                  <Button
+                    type="submit"
+                    disabled={saving || uploadingImage || !categories.length}
+                  >
+                    {uploadingImage
+                      ? "Uploading image…"
+                      : saving
+                        ? "Saving…"
+                        : editingId
+                          ? "Update"
+                          : "Create"}
                   </Button>
                   {editingId && (
                     <Button
