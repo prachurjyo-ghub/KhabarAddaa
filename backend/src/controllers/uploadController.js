@@ -1,6 +1,33 @@
 const ApiError = require("../utils/ApiError");
 const sendSuccess = require("../utils/sendSuccess");
+const { uploadImageBuffer } = require("../utils/cloudinary");
 const RestaurantImage = require("../models/RestaurantImage");
+
+async function uploadImage(req, res) {
+  if (!req.file?.buffer) {
+    throw new ApiError(400, "Image file required (field: image)");
+  }
+
+  try {
+    const result = await uploadImageBuffer(req.file.buffer, {
+      folder: req.uploadFolder || "common",
+      filename: req.file.originalname,
+    });
+    return sendSuccess(
+      res,
+      {
+        url: result.secure_url,
+        path: result.secure_url,
+        folder: req.uploadFolder || "common",
+        filename: result.public_id,
+      },
+      "Uploaded",
+      201
+    );
+  } catch (error) {
+    throw new ApiError(500, error.message || "Cloudinary upload failed");
+  }
+}
 
 async function listPublicGallery(_req, res) {
   const images = await RestaurantImage.find({ isActive: true }).sort({
@@ -34,6 +61,7 @@ async function deleteGalleryImage(req, res) {
 }
 
 module.exports = {
+  uploadImage,
   listPublicGallery,
   listGallery,
   createGalleryImage,

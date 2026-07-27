@@ -44,6 +44,11 @@ const env = {
     process.env.CORS_ORIGINS
   ),
   publicApiOrigin: (process.env.PUBLIC_API_ORIGIN || "").replace(/\/+$/, ""),
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
+    apiKey: process.env.CLOUDINARY_API_KEY || "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || "",
+  },
   seedSuperAdmin: {
     email: process.env.SEED_SUPER_ADMIN_EMAIL || "admin@khabaradda.com",
     password: process.env.SEED_SUPER_ADMIN_PASSWORD || "admin123",

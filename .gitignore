@@ -68,9 +68,9 @@ node_modules/
 **/.env
 **/.env.local
 
-# Uploaded images use backend/uploads/{menu,categories,gallery,common}.
-# Keep them versionable like the PizzaHub structure; ignore only OS junk.
-backend/uploads/**/.DS_Store
+# New uploads go to Cloudinary. Keep only already-committed legacy files.
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Next.js
 **/.next/

@@ -2,7 +2,6 @@ const express = require("express");
 const multer = require("multer");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
-const sendSuccess = require("../utils/sendSuccess");
 const { createImageUpload } = require("../utils/upload");
 const uploadCtrl = require("../controllers/uploadController");
 const {
@@ -13,6 +12,7 @@ const {
 
 const router = express.Router();
 const ALLOWED_FOLDERS = new Set(["menu", "categories", "gallery", "common"]);
+const finishUpload = asyncHandler(uploadCtrl.uploadImage);
 
 router.get("/gallery/public", asyncHandler(uploadCtrl.listPublicGallery));
 
@@ -40,7 +40,7 @@ router.post("/", authenticate, requireStaff, (req, res, next) => {
     return;
   }
 
-  const upload = createImageUpload({ folder, maxSizeKB: 700 });
+  const upload = createImageUpload({ maxSizeKB: 700 });
   upload.single("image")(req, res, (error) => {
     if (error instanceof multer.MulterError) {
       next(new ApiError(400, error.message));
@@ -59,14 +59,8 @@ router.post("/", authenticate, requireStaff, (req, res, next) => {
       return;
     }
 
-    // Store only a portable relative path in MongoDB.
-    const url = `/uploads/${folder}/${req.file.filename}`;
-    sendSuccess(
-      res,
-      { url, path: url, folder, filename: req.file.filename },
-      "Uploaded",
-      201
-    );
+    req.uploadFolder = folder;
+    finishUpload(req, res, next);
   });
 });
 
