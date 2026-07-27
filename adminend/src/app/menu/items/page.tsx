@@ -92,6 +92,8 @@ export default function MenuItemsPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const pendingImageUpload = useRef<Promise<string> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const formSession = useRef(0);
 
   /** Always merge into latest form — avoids wiping name/price/category after select/upload */
   function patchForm(patch: Partial<typeof emptyForm>) {
@@ -284,11 +286,19 @@ export default function MenuItemsPage() {
       toast.error("Wait for the image upload to finish first");
       return;
     }
+    formSession.current += 1;
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setEditingId(null);
-    setForm({ ...emptyForm });
+    setForm({ ...emptyForm, sizes: [], toppings: [] });
   }
 
   function startEdit(item: MenuItem) {
+    if (pendingImageUpload.current) {
+      toast.error("Wait for the image upload to finish first");
+      return;
+    }
+    formSession.current += 1;
+    if (fileInputRef.current) fileInputRef.current.value = "";
     const badge = item.homepageBadge || "none";
     const isChef = badge === "chef-special";
     setEditingId(item._id);
@@ -494,6 +504,7 @@ export default function MenuItemsPage() {
                 <div className="space-y-1">
                   <Label>Dish image</Label>
                   <Input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     disabled={uploadingImage || saving}
@@ -501,13 +512,16 @@ export default function MenuItemsPage() {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       const input = e.currentTarget;
+                      const session = formSession.current;
                       const upload = uploadImage(file);
                       pendingImageUpload.current = upload;
                       setUploadingImage(true);
                       try {
                         const url = await upload;
-                        patchForm({ image: url });
-                        toast.success("Image uploaded");
+                        if (session === formSession.current) {
+                          patchForm({ image: url });
+                          toast.success("Image uploaded");
+                        }
                       } catch (err) {
                         toast.error(
                           err instanceof Error ? err.message : "Upload failed"
