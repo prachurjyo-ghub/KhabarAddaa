@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Montserrat } from "next/font/google";
 import { Toaster } from "sonner";
 import { CartProvider } from "@/components/cart-provider";
 import { AuthProvider } from "@/components/auth-provider";
+import { CulinaryCursorEffect } from "@/components/culinary-cursor-effect";
 import { JsonLd } from "@/components/json-ld";
 import { buildMetadata, restaurantJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site-config";
@@ -56,6 +57,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${display.variable} ${body.variable} antialiased`}>
         <JsonLd data={restaurantJsonLd()} />
+        <CulinaryCursorEffect />
         <AuthProvider>
           <CartProvider>
             {children}
