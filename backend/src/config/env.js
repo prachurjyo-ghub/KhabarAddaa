@@ -60,4 +60,11 @@ const env = {
   },
 };
 
+if (
+  env.nodeEnv === "production" &&
+  (!process.env.JWT_SECRET || env.jwtSecret === "dev-insecure-secret-change-me")
+) {
+  throw new Error("JWT_SECRET must be configured securely in production");
+}
+
 module.exports = env;
