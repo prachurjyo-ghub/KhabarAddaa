@@ -5,8 +5,11 @@ function notFoundHandler(req, _res, next) {
 }
 
 function errorHandler(err, _req, res, _next) {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal server error";
+  const isCastError = err.name === "CastError" && err.kind === "ObjectId";
+  const statusCode = isCastError ? 400 : err.statusCode || 500;
+  const message = isCastError
+    ? `Invalid ${err.path || "identifier"}`
+    : err.message || "Internal server error";
 
   if (statusCode >= 500) {
     console.error(err);
