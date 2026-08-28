@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const { randomInt } = require("node:crypto");
 const ApiError = require("../utils/ApiError");
 const sendSuccess = require("../utils/sendSuccess");
 const { signToken, setAuthCookie, clearAuthCookie } = require("../utils/tokens");
@@ -9,7 +10,7 @@ const StaffOtp = require("../models/StaffOtp");
 const CustomerOtp = require("../models/CustomerOtp");
 
 function makeOtpCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(randomInt(100000, 1000000));
 }
 
 async function registerCustomer(req, res) {
