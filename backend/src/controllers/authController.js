@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const { randomInt } = require("node:crypto");
+const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 const sendSuccess = require("../utils/sendSuccess");
 const { signToken, setAuthCookie, clearAuthCookie } = require("../utils/tokens");
@@ -11,6 +12,10 @@ const CustomerOtp = require("../models/CustomerOtp");
 
 function makeOtpCode() {
   return String(randomInt(100000, 1000000));
+}
+
+function devOtpPayload(code) {
+  return env.nodeEnv === "development" ? { devOtp: code } : {};
 }
 
 async function registerCustomer(req, res) {
@@ -255,7 +260,7 @@ async function requestEmailChangeOtp(req, res) {
     expiresAt,
     meta: { newEmail: String(newEmail).toLowerCase().trim() },
   });
-  return sendSuccess(res, { devOtp: code, expiresAt }, "OTP sent (dev)");
+  return sendSuccess(res, { ...devOtpPayload(code), expiresAt }, "OTP sent");
 }
 
 async function verifyEmailChangeOtp(req, res) {
@@ -323,7 +328,7 @@ async function requestPasswordResetOtp(req, res) {
   });
   return sendSuccess(
     res,
-    { sent: true, devOtp: code, expiresAt },
+    { sent: true, ...devOtpPayload(code), expiresAt },
     "If the account exists, OTP was sent"
   );
 }
@@ -396,7 +401,7 @@ async function requestCustomerPasswordResetOtp(req, res) {
   });
   return sendSuccess(
     res,
-    { sent: true, devOtp: code, expiresAt },
+    { sent: true, ...devOtpPayload(code), expiresAt },
     "If the account exists, OTP was sent"
   );
 }
