@@ -22,6 +22,12 @@ function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function requireNonBlank(value, field = "Name") {
+  const normalized = String(value || "").trim();
+  if (!normalized) throw new ApiError(400, `${field} cannot be blank`);
+  return normalized;
+}
+
 async function registerCustomer(req, res) {
   const { name, email, password, phone } = req.body || {};
   if (!name || !email || !password) {
@@ -37,7 +43,7 @@ async function registerCustomer(req, res) {
   }
   const passwordHash = await bcrypt.hash(String(password), 10);
   const customer = await Customer.create({
-    name: String(name).trim(),
+    name: requireNonBlank(name),
     email: normalizedEmail,
     passwordHash,
     phone: phone ? String(phone).trim() : "",
@@ -77,7 +83,7 @@ async function getCustomerMe(req, res) {
 async function updateCustomerMe(req, res) {
   const customer = req.auth.user;
   const { name, phone, addresses } = req.body || {};
-  if (name !== undefined) customer.name = String(name).trim();
+  if (name !== undefined) customer.name = requireNonBlank(name);
   if (phone !== undefined) customer.phone = String(phone).trim();
   if (addresses !== undefined) {
     if (!Array.isArray(addresses)) {
@@ -123,7 +129,7 @@ async function getStaffMe(req, res) {
 async function updateStaffMe(req, res) {
   const staff = req.auth.user;
   const { name, phone, shift } = req.body || {};
-  if (name !== undefined) staff.name = String(name).trim();
+  if (name !== undefined) staff.name = requireNonBlank(name);
   if (phone !== undefined) staff.phone = String(phone).trim();
   if (shift !== undefined) {
     if (!["ON SHIFT", "OFF DUTY"].includes(shift)) {
@@ -181,7 +187,7 @@ async function createStaff(req, res) {
   }
   const passwordHash = await bcrypt.hash(String(password), 10);
   const staff = await Staff.create({
-    name: String(name).trim(),
+    name: requireNonBlank(name),
     email: normalizedEmail,
     passwordHash,
     phone: phone ? String(phone).trim() : "",
@@ -206,7 +212,7 @@ async function updateStaff(req, res) {
     }
   }
 
-  if (name !== undefined) staff.name = String(name).trim();
+  if (name !== undefined) staff.name = requireNonBlank(name);
   if (phone !== undefined) staff.phone = String(phone).trim();
   if (role !== undefined) {
     if (!["manager", "waiter", "chef", "super_admin"].includes(role)) {
