@@ -206,9 +206,18 @@ async function updateStaff(req, res) {
   }
   const { name, phone, role, permissions, isActive, shift, password } = req.body || {};
 
-  if (staff.role === "super_admin") {
-    if (isActive === false) {
-      throw new ApiError(400, "Super admin cannot be deactivated");
+  const removesActiveSuperAdmin =
+    staff.role === "super_admin" &&
+    staff.isActive &&
+    (isActive === false || (role !== undefined && role !== "super_admin"));
+  if (removesActiveSuperAdmin) {
+    const replacements = await Staff.countDocuments({
+      _id: { $ne: staff._id },
+      role: "super_admin",
+      isActive: true,
+    });
+    if (replacements === 0) {
+      throw new ApiError(400, "At least one active super admin is required");
     }
   }
 
