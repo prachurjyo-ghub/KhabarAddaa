@@ -31,7 +31,7 @@ function resolveFolder(rawFolder) {
   return folder;
 }
 
-router.post("/", authenticate, requireStaff, (req, res, next) => {
+router.post("/", authenticate, requireStaff, requirePermission("menu"), (req, res, next) => {
   let folder;
   try {
     folder = resolveFolder(req.query.folder);
