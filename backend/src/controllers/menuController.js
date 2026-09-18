@@ -2,6 +2,7 @@ const ApiError = require("../utils/ApiError");
 const sendSuccess = require("../utils/sendSuccess");
 const MenuCategory = require("../models/MenuCategory");
 const MenuItem = require("../models/MenuItem");
+const escapeRegex = require("../utils/escapeRegex");
 
 function slugify(text) {
   return String(text)
@@ -97,7 +98,7 @@ async function listStaffMenuItems(req, res) {
   if (req.query.active === "true") q.isActive = true;
   if (req.query.active === "false") q.isActive = false;
   if (req.query.search) {
-    q.name = { $regex: String(req.query.search), $options: "i" };
+    q.name = { $regex: escapeRegex(req.query.search), $options: "i" };
   }
   let sort = { createdAt: -1 };
   if (req.query.sort === "name") sort = { name: 1 };
