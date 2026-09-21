@@ -1,13 +1,14 @@
 const ApiError = require("../utils/ApiError");
 const sendSuccess = require("../utils/sendSuccess");
 const InventoryItem = require("../models/InventoryItem");
+const escapeRegex = require("../utils/escapeRegex");
 
 async function listInventory(req, res) {
   const q = {};
   if (req.query.category) q.category = req.query.category;
   if (req.query.status) q.status = req.query.status;
   if (req.query.search) {
-    q.name = { $regex: String(req.query.search), $options: "i" };
+    q.name = { $regex: escapeRegex(req.query.search), $options: "i" };
   }
   let sort = { updatedAt: -1 };
   if (req.query.sort === "name") sort = { name: 1 };
