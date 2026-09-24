@@ -3,6 +3,14 @@ const sendSuccess = require("../utils/sendSuccess");
 const InventoryItem = require("../models/InventoryItem");
 const escapeRegex = require("../utils/escapeRegex");
 
+function parseQuantity(value) {
+  const quantity = Number(value);
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    throw new ApiError(400, "Quantity must be a non-negative number");
+  }
+  return quantity;
+}
+
 async function listInventory(req, res) {
   const q = {};
   if (req.query.category) q.category = req.query.category;
@@ -22,12 +30,13 @@ async function listInventory(req, res) {
 async function createInventory(req, res) {
   const { name, category, quantity, unit } = req.body || {};
   if (!name) throw new ApiError(400, "Name is required");
+  const parsedQuantity = quantity === undefined ? 0 : parseQuantity(quantity);
   const item = await InventoryItem.create({
     name: String(name).trim(),
     category: category || "General",
-    quantity: Number(quantity) || 0,
+    quantity: parsedQuantity,
     unit: unit || "pcs",
-    lastRestocked: Number(quantity) > 0 ? new Date() : null,
+    lastRestocked: parsedQuantity > 0 ? new Date() : null,
   });
   return sendSuccess(res, { item }, "Inventory item created", 201);
 }
@@ -39,7 +48,7 @@ async function updateInventory(req, res) {
   if (name !== undefined) item.name = String(name).trim();
   if (category !== undefined) item.category = String(category).trim();
   if (unit !== undefined) item.unit = String(unit).trim();
-  if (quantity !== undefined) item.quantity = Number(quantity);
+  if (quantity !== undefined) item.quantity = parseQuantity(quantity);
   await item.save();
   return sendSuccess(res, { item }, "Inventory updated");
 }
