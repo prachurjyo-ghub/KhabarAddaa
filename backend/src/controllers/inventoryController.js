@@ -54,13 +54,31 @@ async function updateInventory(req, res) {
 }
 
 async function restockInventory(req, res) {
-  const item = await InventoryItem.findById(req.params.id);
-  if (!item) throw new ApiError(404, "Inventory item not found");
   const amount = Number(req.body?.amount);
-  if (!amount || amount <= 0) throw new ApiError(400, "Positive amount required");
-  item.quantity += amount;
-  item.lastRestocked = new Date();
-  await item.save();
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new ApiError(400, "Positive amount required");
+  }
+  const item = await InventoryItem.findByIdAndUpdate(
+    req.params.id,
+    [
+      { $set: { quantity: { $add: ["$quantity", amount] }, lastRestocked: new Date() } },
+      {
+        $set: {
+          status: {
+            $switch: {
+              branches: [
+                { case: { $lte: ["$quantity", 0] }, then: "Out of Stock" },
+                { case: { $lte: ["$quantity", 10] }, then: "Low Stock" },
+              ],
+              default: "In Stock",
+            },
+          },
+        },
+      },
+    ],
+    { new: true }
+  );
+  if (!item) throw new ApiError(404, "Inventory item not found");
   return sendSuccess(res, { item }, "Restocked");
 }
 
