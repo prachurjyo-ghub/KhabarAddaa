@@ -11,6 +11,9 @@ async function buildLinesFromPayload(rawItems) {
   }
   const lines = [];
   for (const raw of rawItems) {
+    if (!raw || typeof raw !== "object") {
+      throw new ApiError(400, "Each order item must be an object");
+    }
     const menuItem = await MenuItem.findById(raw.menuItemId || raw.id);
     if (!menuItem || !menuItem.isActive) {
       throw new ApiError(400, `Invalid menu item: ${raw.menuItemId || raw.id}`);
@@ -18,7 +21,10 @@ async function buildLinesFromPayload(rawItems) {
     if (menuItem.status === "Out of Stock") {
       throw new ApiError(400, `${menuItem.name} is out of stock`);
     }
-    const qty = Math.max(1, Number(raw.quantity) || 1);
+    const qty = Number(raw.quantity);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
+      throw new ApiError(400, "Item quantity must be an integer between 1 and 99");
+    }
     let unitPrice = menuItem.price;
     let size = null;
     if (raw.sizeId && Array.isArray(menuItem.sizes)) {
