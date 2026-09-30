@@ -27,9 +27,12 @@ async function buildLinesFromPayload(rawItems) {
     }
     let unitPrice = menuItem.price;
     let size = null;
-    if (raw.sizeId && Array.isArray(menuItem.sizes)) {
-      size = menuItem.sizes.find((s) => s.id === raw.sizeId) || null;
-      if (size) unitPrice += Number(size.extra) || 0;
+    if (raw.sizeId) {
+      size = Array.isArray(menuItem.sizes)
+        ? menuItem.sizes.find((s) => s.id === raw.sizeId) || null
+        : null;
+      if (!size) throw new ApiError(400, `Invalid size for ${menuItem.name}`);
+      unitPrice += Number(size.extra) || 0;
     }
     const toppings = [];
     if (Array.isArray(raw.toppingIds) && Array.isArray(menuItem.toppings)) {
