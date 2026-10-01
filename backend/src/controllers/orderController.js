@@ -35,13 +35,12 @@ async function buildLinesFromPayload(rawItems) {
       unitPrice += Number(size.extra) || 0;
     }
     const toppings = [];
-    if (Array.isArray(raw.toppingIds) && Array.isArray(menuItem.toppings)) {
-      for (const tid of raw.toppingIds) {
+    if (Array.isArray(raw.toppingIds)) {
+      for (const tid of new Set(raw.toppingIds)) {
         const t = menuItem.toppings.find((x) => x.id === tid);
-        if (t) {
-          toppings.push(t);
-          unitPrice += Number(t.price) || 0;
-        }
+        if (!t) throw new ApiError(400, `Invalid topping for ${menuItem.name}`);
+        toppings.push(t);
+        unitPrice += Number(t.price) || 0;
       }
     }
     const lineTotal = unitPrice * qty;
