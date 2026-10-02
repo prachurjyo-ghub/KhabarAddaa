@@ -6,9 +6,16 @@ const DiningTable = require("../models/DiningTable");
 const { computeOrderQuote } = require("../services/pricing");
 
 const ORDER_TYPES = ["delivery", "takeaway", "dine-in"];
+const PAYMENT_METHODS = ["cash", "bkash", "card"];
+const PAYMENT_STATUSES = ["unpaid", "paid", "refunded"];
 
 function assertOrderType(value) {
   if (!ORDER_TYPES.includes(value)) throw new ApiError(400, "Invalid order type");
+  return value;
+}
+
+function assertAllowed(value, allowed, label) {
+  if (!allowed.includes(value)) throw new ApiError(400, `Invalid ${label}`);
   return value;
 }
 
@@ -87,6 +94,11 @@ async function placeCustomerOrder(req, res) {
   const lines = await buildLinesFromPayload(body.items || []);
   const quote = await computeOrderQuote({ items: lines, orderType });
   const customer = req.auth.user;
+  const paymentMethod = assertAllowed(
+    body.paymentMethod || "cash",
+    PAYMENT_METHODS,
+    "payment method"
+  );
 
   const order = await Order.create({
     orderNumber: nextOrderNumber(),
@@ -95,7 +107,7 @@ async function placeCustomerOrder(req, res) {
     customerPhone: body.customerPhone || customer.phone,
     orderType,
     status: "PENDING",
-    paymentMethod: body.paymentMethod || "cash",
+    paymentMethod,
     paymentStatus: "unpaid",
     address: body.address || "",
     instructions: body.instructions || "",
@@ -155,7 +167,13 @@ async function updateOrderStatus(req, res) {
     if (!allowed.includes(status)) throw new ApiError(400, "Invalid status");
     order.status = status;
   }
-  if (paymentStatus) order.paymentStatus = paymentStatus;
+  if (paymentStatus) {
+    order.paymentStatus = assertAllowed(
+      paymentStatus,
+      PAYMENT_STATUSES,
+      "payment status"
+    );
+  }
   await order.save();
   return sendSuccess(res, { order }, "Order updated");
 }
@@ -163,6 +181,16 @@ async function updateOrderStatus(req, res) {
 async function createManualOrder(req, res) {
   const body = req.body || {};
   const orderType = assertOrderType(body.orderType || "dine-in");
+  const paymentMethod = assertAllowed(
+    body.paymentMethod || "cash",
+    PAYMENT_METHODS,
+    "payment method"
+  );
+  const paymentStatus = assertAllowed(
+    body.paymentStatus || "unpaid",
+    PAYMENT_STATUSES,
+    "payment status"
+  );
   const lines = await buildLinesFromPayload(body.items || []);
   const quote = await computeOrderQuote({ items: lines, orderType });
 
@@ -173,8 +201,8 @@ async function createManualOrder(req, res) {
     customerPhone: body.customerPhone || "",
     orderType,
     status: "PENDING",
-    paymentMethod: body.paymentMethod || "cash",
-    paymentStatus: body.paymentStatus || "unpaid",
+    paymentMethod,
+    paymentStatus,
     address: body.address || "",
     instructions: body.instructions || "",
     tableId: body.tableId || null,
