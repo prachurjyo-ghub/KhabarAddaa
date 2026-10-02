@@ -5,6 +5,13 @@ const MenuItem = require("../models/MenuItem");
 const DiningTable = require("../models/DiningTable");
 const { computeOrderQuote } = require("../services/pricing");
 
+const ORDER_TYPES = ["delivery", "takeaway", "dine-in"];
+
+function assertOrderType(value) {
+  if (!ORDER_TYPES.includes(value)) throw new ApiError(400, "Invalid order type");
+  return value;
+}
+
 async function buildLinesFromPayload(rawItems) {
   if (!Array.isArray(rawItems) || rawItems.length === 0) {
     throw new ApiError(400, "At least one item is required");
@@ -65,20 +72,18 @@ function nextOrderNumber() {
 
 async function publicOrderQuote(req, res) {
   const { items, orderType } = req.body || {};
+  const normalizedOrderType = assertOrderType(orderType || "delivery");
   const lines = await buildLinesFromPayload(items || []);
   const quote = await computeOrderQuote({
     items: lines,
-    orderType: orderType || "delivery",
+    orderType: normalizedOrderType,
   });
   return sendSuccess(res, { quote, items: lines });
 }
 
 async function placeCustomerOrder(req, res) {
   const body = req.body || {};
-  const orderType = body.orderType || "delivery";
-  if (!["delivery", "takeaway", "dine-in"].includes(orderType)) {
-    throw new ApiError(400, "Invalid order type");
-  }
+  const orderType = assertOrderType(body.orderType || "delivery");
   const lines = await buildLinesFromPayload(body.items || []);
   const quote = await computeOrderQuote({ items: lines, orderType });
   const customer = req.auth.user;
@@ -157,7 +162,7 @@ async function updateOrderStatus(req, res) {
 
 async function createManualOrder(req, res) {
   const body = req.body || {};
-  const orderType = body.orderType || "dine-in";
+  const orderType = assertOrderType(body.orderType || "dine-in");
   const lines = await buildLinesFromPayload(body.items || []);
   const quote = await computeOrderQuote({ items: lines, orderType });
 
