@@ -19,6 +19,14 @@ function assertAllowed(value, allowed, label) {
   return value;
 }
 
+function deliveryAddress(orderType, value) {
+  const address = String(value || "").trim();
+  if (orderType === "delivery" && !address) {
+    throw new ApiError(400, "Delivery address is required");
+  }
+  return address;
+}
+
 async function buildLinesFromPayload(rawItems) {
   if (!Array.isArray(rawItems) || rawItems.length === 0) {
     throw new ApiError(400, "At least one item is required");
@@ -91,6 +99,7 @@ async function publicOrderQuote(req, res) {
 async function placeCustomerOrder(req, res) {
   const body = req.body || {};
   const orderType = assertOrderType(body.orderType || "delivery");
+  const address = deliveryAddress(orderType, body.address);
   const lines = await buildLinesFromPayload(body.items || []);
   const quote = await computeOrderQuote({ items: lines, orderType });
   const customer = req.auth.user;
@@ -109,7 +118,7 @@ async function placeCustomerOrder(req, res) {
     status: "PENDING",
     paymentMethod,
     paymentStatus: "unpaid",
-    address: body.address || "",
+    address,
     instructions: body.instructions || "",
     tableId: body.tableId || null,
     tableName: body.tableName || "",
@@ -181,6 +190,7 @@ async function updateOrderStatus(req, res) {
 async function createManualOrder(req, res) {
   const body = req.body || {};
   const orderType = assertOrderType(body.orderType || "dine-in");
+  const address = deliveryAddress(orderType, body.address);
   const paymentMethod = assertAllowed(
     body.paymentMethod || "cash",
     PAYMENT_METHODS,
@@ -203,7 +213,7 @@ async function createManualOrder(req, res) {
     status: "PENDING",
     paymentMethod,
     paymentStatus,
-    address: body.address || "",
+    address,
     instructions: body.instructions || "",
     tableId: body.tableId || null,
     tableName: body.tableName || "",
