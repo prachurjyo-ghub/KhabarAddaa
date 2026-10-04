@@ -1,4 +1,5 @@
 const ApiError = require("../utils/ApiError");
+const { randomUUID } = require("node:crypto");
 const sendSuccess = require("../utils/sendSuccess");
 const Order = require("../models/Order");
 const MenuItem = require("../models/MenuItem");
@@ -82,7 +83,7 @@ async function buildLinesFromPayload(rawItems) {
 }
 
 function nextOrderNumber() {
-  return `ORD-${Date.now()}`;
+  return `ORD-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
 async function publicOrderQuote(req, res) {
