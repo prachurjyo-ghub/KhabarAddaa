@@ -146,6 +146,15 @@ async function myOrders(req, res) {
 const LIVE_STATUSES = ["PENDING", "PREPARING", "READY", "IN_TRANSIT"];
 const HISTORY_STATUSES = ["DELIVERED", "CANCELLED"];
 
+function parseHistoryDate(value, endOfDay = false) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new ApiError(400, "Invalid history date");
+  if (endOfDay && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+    date.setHours(23, 59, 59, 999);
+  }
+  return date;
+}
+
 async function listLiveOrders(req, res) {
   const q = { status: { $in: LIVE_STATUSES } };
   if (req.query.orderType) q.orderType = req.query.orderType;
@@ -161,8 +170,11 @@ async function listOrderHistory(req, res) {
   if (req.query.status) q.status = req.query.status;
   if (req.query.from || req.query.to) {
     q.createdAt = {};
-    if (req.query.from) q.createdAt.$gte = new Date(req.query.from);
-    if (req.query.to) q.createdAt.$lte = new Date(req.query.to);
+    if (req.query.from) q.createdAt.$gte = parseHistoryDate(req.query.from);
+    if (req.query.to) q.createdAt.$lte = parseHistoryDate(req.query.to, true);
+    if (q.createdAt.$gte && q.createdAt.$lte && q.createdAt.$gte > q.createdAt.$lte) {
+      throw new ApiError(400, "History start date must not exceed end date");
+    }
   }
   const orders = await Order.find(q).sort({ createdAt: -1 });
   return sendSuccess(res, { orders });
