@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { pickBest } = require("../src/services/pricing");
+const { pickBest, pickDeliveryFee } = require("../src/services/pricing");
 
 test("pickBest prefers product rules over broader active rules", () => {
   const rules = [
@@ -25,4 +25,14 @@ test("pickBest ignores inactive and nonmatching rules", () => {
     pickBest(rules, { productId: "item-1", categoryId: "cat-1" }),
     null
   );
+});
+
+test("pickDeliveryFee selects the highest eligible order threshold", () => {
+  const rules = [
+    { minOrder: 0, fee: 80, isActive: true },
+    { minOrder: 500, fee: 40, isActive: true },
+    { minOrder: 1000, fee: 0, isActive: true },
+  ];
+
+  assert.equal(pickDeliveryFee(rules, 750), rules[1]);
 });

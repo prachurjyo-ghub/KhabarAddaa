@@ -34,10 +34,21 @@ function applyOffer(offer, amount) {
   return Math.min(amount, offer.value);
 }
 
+function pickDeliveryFee(rules, subtotal) {
+  return (
+    rules
+      .filter((rule) => rule.isActive && subtotal >= Number(rule.minOrder || 0))
+      .sort(
+        (a, b) =>
+          Number(b.minOrder || 0) - Number(a.minOrder || 0) || a.fee - b.fee
+      )[0] || null
+  );
+}
+
 async function computeOrderQuote({ items, orderType }) {
   const offers = await Offer.find({ isActive: true });
   const vatRules = await VatRule.find({ isActive: true });
-  const deliveryFees = await DeliveryFee.find({ isActive: true }).sort({ fee: 1 });
+  const deliveryFees = await DeliveryFee.find({ isActive: true });
 
   let subtotal = 0;
   let discount = 0;
@@ -68,8 +79,7 @@ async function computeOrderQuote({ items, orderType }) {
   let deliveryFee = 0;
   let deliveryFeeRule = null;
   if (orderType === "delivery") {
-    const eligible = deliveryFees.filter((f) => subtotal >= (f.minOrder || 0));
-    deliveryFeeRule = eligible[0] || deliveryFees[0] || null;
+    deliveryFeeRule = pickDeliveryFee(deliveryFees, subtotal);
     deliveryFee = deliveryFeeRule ? deliveryFeeRule.fee : 0;
   }
 
@@ -85,4 +95,4 @@ async function computeOrderQuote({ items, orderType }) {
   };
 }
 
-module.exports = { computeOrderQuote, pickBest };
+module.exports = { computeOrderQuote, pickBest, pickDeliveryFee };
