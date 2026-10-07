@@ -18,6 +18,41 @@ function minutesToLabel(mins) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+function assertBookableDate(value) {
+  const date = String(value || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new ApiError(400, "Date must use YYYY-MM-DD format");
+  }
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) {
+    throw new ApiError(400, "Invalid booking date");
+  }
+  const dhakaToday = new Date(Date.now() + 6 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  if (date < dhakaToday) throw new ApiError(400, "Booking date cannot be in the past");
+  return date;
+}
+
+function assertSlot(startValue, endValue, hours) {
+  const start = Number(startValue);
+  const end = Number(endValue);
+  const duration = hours.slotDurationMinutes;
+  const aligned = (start - hours.openMinutes) % duration === 0;
+  if (
+    !Number.isInteger(start) ||
+    !Number.isInteger(end) ||
+    start < hours.openMinutes ||
+    end > hours.closeMinutes ||
+    start >= end ||
+    end - start !== duration ||
+    !aligned
+  ) {
+    throw new ApiError(400, "Selected booking slot is outside opening hours");
+  }
+  return { start, end };
+}
+
 async function resolveDayHours(dateStr) {
   const blocked = await BlockedDate.findOne({ date: dateStr });
   if (blocked) return { closed: true, reason: blocked.reason || "Blocked" };
@@ -84,7 +119,11 @@ async function deleteTable(req, res) {
 async function publicAvailability(req, res) {
   const { date, guests } = req.query;
   if (!date) throw new ApiError(400, "Date is required");
-  const guestCount = Number(guests) || 2;
+  const bookingDate = assertBookableDate(date);
+  const guestCount = guests === undefined ? 2 : Number(guests);
+  if (!Number.isInteger(guestCount) || guestCount < 1) {
+    throw new ApiError(400, "Guests must be a positive integer");
+  }
   if (guestCount >= 13) {
     return sendSuccess(res, {
       largeParty: true,
@@ -93,13 +132,13 @@ async function publicAvailability(req, res) {
     });
   }
 
-  const hours = await resolveDayHours(date);
+  const hours = await resolveDayHours(bookingDate);
   if (hours.closed) {
     return sendSuccess(res, { closed: true, reason: hours.reason, slots: [] });
   }
 
   const bookings = await Booking.find({
-    date,
+    date: bookingDate,
     status: { $nin: ["Cancelled", "No Show"] },
   });
 
@@ -141,15 +180,17 @@ async function createPublicBooking(req, res) {
   if (!body.customerName || !body.customerPhone || !body.date) {
     throw new ApiError(400, "Name, phone, and date are required");
   }
-  if (!guests || guests < 1 || guests > 12) {
+  if (!Number.isInteger(guests) || guests < 1 || guests > 12) {
     throw new ApiError(400, "Guests must be between 1 and 12 for online booking");
   }
   if (body.startMinutes === undefined || body.endMinutes === undefined) {
     throw new ApiError(400, "Slot start/end required");
   }
 
-  const hours = await resolveDayHours(body.date);
+  const bookingDate = assertBookableDate(body.date);
+  const hours = await resolveDayHours(bookingDate);
   if (hours.closed) throw new ApiError(400, hours.reason || "Restaurant closed");
+  const { start, end } = assertSlot(body.startMinutes, body.endMinutes, hours);
 
   const tables = await DiningTable.find({
     isActive: true,
@@ -158,10 +199,10 @@ async function createPublicBooking(req, res) {
   }).sort({ seats: 1 });
 
   const overlapping = await Booking.find({
-    date: body.date,
+    date: bookingDate,
     status: { $nin: ["Cancelled", "No Show"] },
-    startMinutes: { $lt: body.endMinutes },
-    endMinutes: { $gt: body.startMinutes },
+    startMinutes: { $lt: end },
+    endMinutes: { $gt: start },
   });
   const used = new Set(overlapping.filter((b) => b.tableId).map((b) => String(b.tableId)));
   const free = tables.find((t) => !used.has(String(t._id)));
@@ -173,9 +214,9 @@ async function createPublicBooking(req, res) {
     customerPhone: body.customerPhone,
     customerEmail: body.customerEmail || "",
     guests,
-    date: body.date,
-    startMinutes: Number(body.startMinutes),
-    endMinutes: Number(body.endMinutes),
+    date: bookingDate,
+    startMinutes: start,
+    endMinutes: end,
     tableId: free._id,
     tableName: free.name,
     note: body.note || "",
