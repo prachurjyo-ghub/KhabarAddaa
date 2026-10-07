@@ -19,13 +19,17 @@ const app = express();
 function isLocalDevOrigin(origin) {
   try {
     const hostname = new URL(origin).hostname;
+    const secondOctet = Number(hostname.split(".")[1]);
     return (
       hostname === "localhost" ||
       hostname === "127.0.0.1" ||
       hostname === "0.0.0.0" ||
       hostname.startsWith("192.168.") ||
       hostname.startsWith("10.") ||
-      hostname.startsWith("172.")
+      (hostname.startsWith("172.") &&
+        Number.isInteger(secondOctet) &&
+        secondOctet >= 16 &&
+        secondOctet <= 31)
     );
   } catch {
     return false;
@@ -52,7 +56,7 @@ app.use(
 );
 app.use(morgan("dev"));
 app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 app.use(cookieParser());
 app.use("/uploads", express.static(uploadsRoot));
 

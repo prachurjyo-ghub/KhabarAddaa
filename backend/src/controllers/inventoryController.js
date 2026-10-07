@@ -1,13 +1,22 @@
 const ApiError = require("../utils/ApiError");
 const sendSuccess = require("../utils/sendSuccess");
 const InventoryItem = require("../models/InventoryItem");
+const escapeRegex = require("../utils/escapeRegex");
+
+function parseQuantity(value) {
+  const quantity = Number(value);
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    throw new ApiError(400, "Quantity must be a non-negative number");
+  }
+  return quantity;
+}
 
 async function listInventory(req, res) {
   const q = {};
   if (req.query.category) q.category = req.query.category;
   if (req.query.status) q.status = req.query.status;
   if (req.query.search) {
-    q.name = { $regex: String(req.query.search), $options: "i" };
+    q.name = { $regex: escapeRegex(req.query.search), $options: "i" };
   }
   let sort = { updatedAt: -1 };
   if (req.query.sort === "name") sort = { name: 1 };
@@ -21,12 +30,13 @@ async function listInventory(req, res) {
 async function createInventory(req, res) {
   const { name, category, quantity, unit } = req.body || {};
   if (!name) throw new ApiError(400, "Name is required");
+  const parsedQuantity = quantity === undefined ? 0 : parseQuantity(quantity);
   const item = await InventoryItem.create({
     name: String(name).trim(),
     category: category || "General",
-    quantity: Number(quantity) || 0,
+    quantity: parsedQuantity,
     unit: unit || "pcs",
-    lastRestocked: Number(quantity) > 0 ? new Date() : null,
+    lastRestocked: parsedQuantity > 0 ? new Date() : null,
   });
   return sendSuccess(res, { item }, "Inventory item created", 201);
 }
@@ -38,19 +48,37 @@ async function updateInventory(req, res) {
   if (name !== undefined) item.name = String(name).trim();
   if (category !== undefined) item.category = String(category).trim();
   if (unit !== undefined) item.unit = String(unit).trim();
-  if (quantity !== undefined) item.quantity = Number(quantity);
+  if (quantity !== undefined) item.quantity = parseQuantity(quantity);
   await item.save();
   return sendSuccess(res, { item }, "Inventory updated");
 }
 
 async function restockInventory(req, res) {
-  const item = await InventoryItem.findById(req.params.id);
-  if (!item) throw new ApiError(404, "Inventory item not found");
   const amount = Number(req.body?.amount);
-  if (!amount || amount <= 0) throw new ApiError(400, "Positive amount required");
-  item.quantity += amount;
-  item.lastRestocked = new Date();
-  await item.save();
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new ApiError(400, "Positive amount required");
+  }
+  const item = await InventoryItem.findByIdAndUpdate(
+    req.params.id,
+    [
+      { $set: { quantity: { $add: ["$quantity", amount] }, lastRestocked: new Date() } },
+      {
+        $set: {
+          status: {
+            $switch: {
+              branches: [
+                { case: { $lte: ["$quantity", 0] }, then: "Out of Stock" },
+                { case: { $lte: ["$quantity", 10] }, then: "Low Stock" },
+              ],
+              default: "In Stock",
+            },
+          },
+        },
+      },
+    ],
+    { new: true }
+  );
+  if (!item) throw new ApiError(404, "Inventory item not found");
   return sendSuccess(res, { item }, "Restocked");
 }
 

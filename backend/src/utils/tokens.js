@@ -11,12 +11,19 @@ function verifyToken(token) {
   return jwt.verify(token, env.jwtSecret);
 }
 
+function durationToMs(value) {
+  const match = String(value).match(/^(\d+)([smhd])$/i);
+  if (!match) return undefined;
+  const factors = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+  return Number(match[1]) * factors[match[2].toLowerCase()];
+}
+
 function cookieOptions() {
   return {
     httpOnly: true,
     sameSite: "lax",
-    secure: false,
-    maxAge: undefined,
+    secure: env.nodeEnv === "production",
+    maxAge: durationToMs(env.jwtExpiresIn),
   };
 }
 

@@ -5,8 +5,22 @@ function notFoundHandler(req, _res, next) {
 }
 
 function errorHandler(err, _req, res, _next) {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal server error";
+  const isCastError = err.name === "CastError" && err.kind === "ObjectId";
+  const isValidationError = err.name === "ValidationError";
+  const isDuplicateKey = err?.code === 11000;
+  const statusCode =
+    isCastError || isValidationError
+      ? 400
+      : isDuplicateKey
+        ? 409
+        : err.statusCode || 500;
+  const message = isCastError
+    ? `Invalid ${err.path || "identifier"}`
+    : isValidationError
+      ? "Validation failed"
+      : isDuplicateKey
+        ? "A record with that value already exists"
+        : err.message || "Internal server error";
 
   if (statusCode >= 500) {
     console.error(err);

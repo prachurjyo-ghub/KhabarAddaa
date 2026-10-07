@@ -4,6 +4,19 @@ const Offer = require("../models/Offer");
 const VatRule = require("../models/VatRule");
 const DeliveryFee = require("../models/DeliveryFee");
 
+function parseNonNegative(value, label, max = Infinity) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0 || number > max) {
+    const range = Number.isFinite(max) ? `between 0 and ${max}` : "a non-negative number";
+    throw new ApiError(400, `${label} must be ${range}`);
+  }
+  return number;
+}
+
+function parseOfferValue(value, type) {
+  return parseNonNegative(value, "Offer value", type === "percent" ? 100 : Infinity);
+}
+
 async function publicFinancialsSnapshot(_req, res) {
   const [offers, vatRules, deliveryFees] = await Promise.all([
     Offer.find({ isActive: true }),
@@ -23,8 +36,8 @@ async function createDeliveryFee(req, res) {
   if (!name || fee === undefined) throw new ApiError(400, "Name and fee required");
   const row = await DeliveryFee.create({
     name,
-    fee: Number(fee),
-    minOrder: Number(minOrder) || 0,
+    fee: parseNonNegative(fee, "Fee"),
+    minOrder: minOrder === undefined ? 0 : parseNonNegative(minOrder, "Minimum order"),
     isActive: isActive !== false,
   });
   return sendSuccess(res, { deliveryFee: row }, "Created", 201);
@@ -35,8 +48,8 @@ async function updateDeliveryFee(req, res) {
   if (!row) throw new ApiError(404, "Not found");
   const { name, fee, minOrder, isActive } = req.body || {};
   if (name !== undefined) row.name = name;
-  if (fee !== undefined) row.fee = Number(fee);
-  if (minOrder !== undefined) row.minOrder = Number(minOrder);
+  if (fee !== undefined) row.fee = parseNonNegative(fee, "Fee");
+  if (minOrder !== undefined) row.minOrder = parseNonNegative(minOrder, "Minimum order");
   if (isActive !== undefined) row.isActive = Boolean(isActive);
   await row.save();
   return sendSuccess(res, { deliveryFee: row }, "Updated");
@@ -73,7 +86,7 @@ async function createVatRule(req, res) {
   const appliesTo = assertScope(body);
   const row = await VatRule.create({
     name: body.name,
-    rate: Number(body.rate),
+    rate: parseNonNegative(body.rate, "VAT rate", 100),
     appliesTo,
     categoryId:
       appliesTo === "category" || appliesTo === "product"
@@ -102,7 +115,7 @@ async function updateVatRule(req, res) {
     });
   }
   if (body.name !== undefined) row.name = body.name;
-  if (body.rate !== undefined) row.rate = Number(body.rate);
+  if (body.rate !== undefined) row.rate = parseNonNegative(body.rate, "VAT rate", 100);
   if (body.appliesTo !== undefined) row.appliesTo = body.appliesTo;
   if (body.isActive !== undefined) row.isActive = Boolean(body.isActive);
   if (body.appliesTo !== undefined || body.categoryId !== undefined) {
@@ -148,7 +161,7 @@ async function createOffer(req, res) {
   const row = await Offer.create({
     name: body.name,
     type: body.type,
-    value: Number(body.value),
+    value: parseOfferValue(body.value, body.type),
     appliesTo,
     categoryId:
       appliesTo === "category" || appliesTo === "product"
@@ -178,7 +191,9 @@ async function updateOffer(req, res) {
   }
   if (body.name !== undefined) row.name = body.name;
   if (body.type !== undefined) row.type = body.type;
-  if (body.value !== undefined) row.value = Number(body.value);
+  if (body.value !== undefined || body.type !== undefined) {
+    row.value = parseOfferValue(body.value ?? row.value, body.type ?? row.type);
+  }
   if (body.appliesTo !== undefined) row.appliesTo = body.appliesTo;
   if (body.isActive !== undefined) row.isActive = Boolean(body.isActive);
   if (body.appliesTo !== undefined || body.categoryId !== undefined) {

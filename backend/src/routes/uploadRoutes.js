@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
-const { createImageUpload } = require("../utils/upload");
+const { createImageUpload, isSupportedImageBuffer } = require("../utils/upload");
 const uploadCtrl = require("../controllers/uploadController");
 const {
   authenticate,
@@ -31,7 +31,7 @@ function resolveFolder(rawFolder) {
   return folder;
 }
 
-router.post("/", authenticate, requireStaff, (req, res, next) => {
+router.post("/", authenticate, requireStaff, requirePermission("menu"), (req, res, next) => {
   let folder;
   try {
     folder = resolveFolder(req.query.folder);
@@ -56,6 +56,10 @@ router.post("/", authenticate, requireStaff, (req, res, next) => {
     }
     if (!req.file) {
       next(new ApiError(400, "Image file required (field: image)"));
+      return;
+    }
+    if (!isSupportedImageBuffer(req.file.buffer)) {
+      next(new ApiError(400, "Unsupported or invalid image content"));
       return;
     }
 

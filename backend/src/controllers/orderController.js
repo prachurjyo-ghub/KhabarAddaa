@@ -1,9 +1,32 @@
 const ApiError = require("../utils/ApiError");
+const { randomUUID } = require("node:crypto");
 const sendSuccess = require("../utils/sendSuccess");
 const Order = require("../models/Order");
 const MenuItem = require("../models/MenuItem");
 const DiningTable = require("../models/DiningTable");
 const { computeOrderQuote } = require("../services/pricing");
+
+const ORDER_TYPES = ["delivery", "takeaway", "dine-in"];
+const PAYMENT_METHODS = ["cash", "bkash", "card"];
+const PAYMENT_STATUSES = ["unpaid", "paid", "refunded"];
+
+function assertOrderType(value) {
+  if (!ORDER_TYPES.includes(value)) throw new ApiError(400, "Invalid order type");
+  return value;
+}
+
+function assertAllowed(value, allowed, label) {
+  if (!allowed.includes(value)) throw new ApiError(400, `Invalid ${label}`);
+  return value;
+}
+
+function deliveryAddress(orderType, value) {
+  const address = String(value || "").trim();
+  if (orderType === "delivery" && !address) {
+    throw new ApiError(400, "Delivery address is required");
+  }
+  return address;
+}
 
 async function buildLinesFromPayload(rawItems) {
   if (!Array.isArray(rawItems) || rawItems.length === 0) {
@@ -11,6 +34,9 @@ async function buildLinesFromPayload(rawItems) {
   }
   const lines = [];
   for (const raw of rawItems) {
+    if (!raw || typeof raw !== "object") {
+      throw new ApiError(400, "Each order item must be an object");
+    }
     const menuItem = await MenuItem.findById(raw.menuItemId || raw.id);
     if (!menuItem || !menuItem.isActive) {
       throw new ApiError(400, `Invalid menu item: ${raw.menuItemId || raw.id}`);
@@ -18,21 +44,26 @@ async function buildLinesFromPayload(rawItems) {
     if (menuItem.status === "Out of Stock") {
       throw new ApiError(400, `${menuItem.name} is out of stock`);
     }
-    const qty = Math.max(1, Number(raw.quantity) || 1);
+    const qty = Number(raw.quantity);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
+      throw new ApiError(400, "Item quantity must be an integer between 1 and 99");
+    }
     let unitPrice = menuItem.price;
     let size = null;
-    if (raw.sizeId && Array.isArray(menuItem.sizes)) {
-      size = menuItem.sizes.find((s) => s.id === raw.sizeId) || null;
-      if (size) unitPrice += Number(size.extra) || 0;
+    if (raw.sizeId) {
+      size = Array.isArray(menuItem.sizes)
+        ? menuItem.sizes.find((s) => s.id === raw.sizeId) || null
+        : null;
+      if (!size) throw new ApiError(400, `Invalid size for ${menuItem.name}`);
+      unitPrice += Number(size.extra) || 0;
     }
     const toppings = [];
-    if (Array.isArray(raw.toppingIds) && Array.isArray(menuItem.toppings)) {
-      for (const tid of raw.toppingIds) {
+    if (Array.isArray(raw.toppingIds)) {
+      for (const tid of new Set(raw.toppingIds)) {
         const t = menuItem.toppings.find((x) => x.id === tid);
-        if (t) {
-          toppings.push(t);
-          unitPrice += Number(t.price) || 0;
-        }
+        if (!t) throw new ApiError(400, `Invalid topping for ${menuItem.name}`);
+        toppings.push(t);
+        unitPrice += Number(t.price) || 0;
       }
     }
     const lineTotal = unitPrice * qty;
@@ -52,28 +83,32 @@ async function buildLinesFromPayload(rawItems) {
 }
 
 function nextOrderNumber() {
-  return `ORD-${Date.now()}`;
+  return `ORD-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
 async function publicOrderQuote(req, res) {
   const { items, orderType } = req.body || {};
+  const normalizedOrderType = assertOrderType(orderType || "delivery");
   const lines = await buildLinesFromPayload(items || []);
   const quote = await computeOrderQuote({
     items: lines,
-    orderType: orderType || "delivery",
+    orderType: normalizedOrderType,
   });
   return sendSuccess(res, { quote, items: lines });
 }
 
 async function placeCustomerOrder(req, res) {
   const body = req.body || {};
-  const orderType = body.orderType || "delivery";
-  if (!["delivery", "takeaway", "dine-in"].includes(orderType)) {
-    throw new ApiError(400, "Invalid order type");
-  }
+  const orderType = assertOrderType(body.orderType || "delivery");
+  const address = deliveryAddress(orderType, body.address);
   const lines = await buildLinesFromPayload(body.items || []);
   const quote = await computeOrderQuote({ items: lines, orderType });
   const customer = req.auth.user;
+  const paymentMethod = assertAllowed(
+    body.paymentMethod || "cash",
+    PAYMENT_METHODS,
+    "payment method"
+  );
 
   const order = await Order.create({
     orderNumber: nextOrderNumber(),
@@ -82,9 +117,9 @@ async function placeCustomerOrder(req, res) {
     customerPhone: body.customerPhone || customer.phone,
     orderType,
     status: "PENDING",
-    paymentMethod: body.paymentMethod || "cash",
+    paymentMethod,
     paymentStatus: "unpaid",
-    address: body.address || "",
+    address,
     instructions: body.instructions || "",
     tableId: body.tableId || null,
     tableName: body.tableName || "",
@@ -111,6 +146,15 @@ async function myOrders(req, res) {
 const LIVE_STATUSES = ["PENDING", "PREPARING", "READY", "IN_TRANSIT"];
 const HISTORY_STATUSES = ["DELIVERED", "CANCELLED"];
 
+function parseHistoryDate(value, endOfDay = false) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new ApiError(400, "Invalid history date");
+  if (endOfDay && /^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+    date.setHours(23, 59, 59, 999);
+  }
+  return date;
+}
+
 async function listLiveOrders(req, res) {
   const q = { status: { $in: LIVE_STATUSES } };
   if (req.query.orderType) q.orderType = req.query.orderType;
@@ -126,8 +170,11 @@ async function listOrderHistory(req, res) {
   if (req.query.status) q.status = req.query.status;
   if (req.query.from || req.query.to) {
     q.createdAt = {};
-    if (req.query.from) q.createdAt.$gte = new Date(req.query.from);
-    if (req.query.to) q.createdAt.$lte = new Date(req.query.to);
+    if (req.query.from) q.createdAt.$gte = parseHistoryDate(req.query.from);
+    if (req.query.to) q.createdAt.$lte = parseHistoryDate(req.query.to, true);
+    if (q.createdAt.$gte && q.createdAt.$lte && q.createdAt.$gte > q.createdAt.$lte) {
+      throw new ApiError(400, "History start date must not exceed end date");
+    }
   }
   const orders = await Order.find(q).sort({ createdAt: -1 });
   return sendSuccess(res, { orders });
@@ -142,14 +189,31 @@ async function updateOrderStatus(req, res) {
     if (!allowed.includes(status)) throw new ApiError(400, "Invalid status");
     order.status = status;
   }
-  if (paymentStatus) order.paymentStatus = paymentStatus;
+  if (paymentStatus) {
+    order.paymentStatus = assertAllowed(
+      paymentStatus,
+      PAYMENT_STATUSES,
+      "payment status"
+    );
+  }
   await order.save();
   return sendSuccess(res, { order }, "Order updated");
 }
 
 async function createManualOrder(req, res) {
   const body = req.body || {};
-  const orderType = body.orderType || "dine-in";
+  const orderType = assertOrderType(body.orderType || "dine-in");
+  const address = deliveryAddress(orderType, body.address);
+  const paymentMethod = assertAllowed(
+    body.paymentMethod || "cash",
+    PAYMENT_METHODS,
+    "payment method"
+  );
+  const paymentStatus = assertAllowed(
+    body.paymentStatus || "unpaid",
+    PAYMENT_STATUSES,
+    "payment status"
+  );
   const lines = await buildLinesFromPayload(body.items || []);
   const quote = await computeOrderQuote({ items: lines, orderType });
 
@@ -160,9 +224,9 @@ async function createManualOrder(req, res) {
     customerPhone: body.customerPhone || "",
     orderType,
     status: "PENDING",
-    paymentMethod: body.paymentMethod || "cash",
-    paymentStatus: body.paymentStatus || "unpaid",
-    address: body.address || "",
+    paymentMethod,
+    paymentStatus,
+    address,
     instructions: body.instructions || "",
     tableId: body.tableId || null,
     tableName: body.tableName || "",

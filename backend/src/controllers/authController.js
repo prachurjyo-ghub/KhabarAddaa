@@ -1,4 +1,6 @@
 const bcrypt = require("bcryptjs");
+const { randomInt } = require("node:crypto");
+const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 const sendSuccess = require("../utils/sendSuccess");
 const { signToken, setAuthCookie, clearAuthCookie } = require("../utils/tokens");
@@ -9,7 +11,21 @@ const StaffOtp = require("../models/StaffOtp");
 const CustomerOtp = require("../models/CustomerOtp");
 
 function makeOtpCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(randomInt(100000, 1000000));
+}
+
+function devOtpPayload(code) {
+  return env.nodeEnv === "development" ? { devOtp: code } : {};
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function requireNonBlank(value, field = "Name") {
+  const normalized = String(value || "").trim();
+  if (!normalized) throw new ApiError(400, `${field} cannot be blank`);
+  return normalized;
 }
 
 async function registerCustomer(req, res) {
@@ -20,14 +36,15 @@ async function registerCustomer(req, res) {
   if (String(password).length < 6) {
     throw new ApiError(400, "Password must be at least 6 characters");
   }
-  const exists = await Customer.findOne({ email: String(email).toLowerCase() });
+  const normalizedEmail = normalizeEmail(email);
+  const exists = await Customer.findOne({ email: normalizedEmail });
   if (exists) {
     throw new ApiError(409, "Email already registered");
   }
   const passwordHash = await bcrypt.hash(String(password), 10);
   const customer = await Customer.create({
-    name: String(name).trim(),
-    email: String(email).toLowerCase().trim(),
+    name: requireNonBlank(name),
+    email: normalizedEmail,
     passwordHash,
     phone: phone ? String(phone).trim() : "",
   });
@@ -46,7 +63,7 @@ async function loginCustomer(req, res) {
   if (!email || !password) {
     throw new ApiError(400, "Email and password are required");
   }
-  const customer = await Customer.findOne({ email: String(email).toLowerCase() });
+  const customer = await Customer.findOne({ email: normalizeEmail(email) });
   if (!customer) {
     throw new ApiError(401, "Invalid credentials");
   }
@@ -66,7 +83,7 @@ async function getCustomerMe(req, res) {
 async function updateCustomerMe(req, res) {
   const customer = req.auth.user;
   const { name, phone, addresses } = req.body || {};
-  if (name !== undefined) customer.name = String(name).trim();
+  if (name !== undefined) customer.name = requireNonBlank(name);
   if (phone !== undefined) customer.phone = String(phone).trim();
   if (addresses !== undefined) {
     if (!Array.isArray(addresses)) {
@@ -88,7 +105,7 @@ async function loginStaff(req, res) {
   if (!email || !password) {
     throw new ApiError(400, "Email and password are required");
   }
-  const staff = await Staff.findOne({ email: String(email).toLowerCase() });
+  const staff = await Staff.findOne({ email: normalizeEmail(email) });
   if (!staff || !staff.isActive) {
     throw new ApiError(401, "Invalid credentials or inactive account");
   }
@@ -112,7 +129,7 @@ async function getStaffMe(req, res) {
 async function updateStaffMe(req, res) {
   const staff = req.auth.user;
   const { name, phone, shift } = req.body || {};
-  if (name !== undefined) staff.name = String(name).trim();
+  if (name !== undefined) staff.name = requireNonBlank(name);
   if (phone !== undefined) staff.phone = String(phone).trim();
   if (shift !== undefined) {
     if (!["ON SHIFT", "OFF DUTY"].includes(shift)) {
@@ -163,14 +180,15 @@ async function createStaff(req, res) {
   if (String(password).length < 6) {
     throw new ApiError(400, "Password must be at least 6 characters");
   }
-  const exists = await Staff.findOne({ email: String(email).toLowerCase() });
+  const normalizedEmail = normalizeEmail(email);
+  const exists = await Staff.findOne({ email: normalizedEmail });
   if (exists) {
     throw new ApiError(409, "Staff email already exists");
   }
   const passwordHash = await bcrypt.hash(String(password), 10);
   const staff = await Staff.create({
-    name: String(name).trim(),
-    email: String(email).toLowerCase().trim(),
+    name: requireNonBlank(name),
+    email: normalizedEmail,
     passwordHash,
     phone: phone ? String(phone).trim() : "",
     role,
@@ -188,13 +206,22 @@ async function updateStaff(req, res) {
   }
   const { name, phone, role, permissions, isActive, shift, password } = req.body || {};
 
-  if (staff.role === "super_admin") {
-    if (isActive === false) {
-      throw new ApiError(400, "Super admin cannot be deactivated");
+  const removesActiveSuperAdmin =
+    staff.role === "super_admin" &&
+    staff.isActive &&
+    (isActive === false || (role !== undefined && role !== "super_admin"));
+  if (removesActiveSuperAdmin) {
+    const replacements = await Staff.countDocuments({
+      _id: { $ne: staff._id },
+      role: "super_admin",
+      isActive: true,
+    });
+    if (replacements === 0) {
+      throw new ApiError(400, "At least one active super admin is required");
     }
   }
 
-  if (name !== undefined) staff.name = String(name).trim();
+  if (name !== undefined) staff.name = requireNonBlank(name);
   if (phone !== undefined) staff.phone = String(phone).trim();
   if (role !== undefined) {
     if (!["manager", "waiter", "chef", "super_admin"].includes(role)) {
@@ -252,9 +279,9 @@ async function requestEmailChangeOtp(req, res) {
     code,
     verified: false,
     expiresAt,
-    meta: { newEmail: String(newEmail).toLowerCase().trim() },
+    meta: { newEmail: normalizeEmail(newEmail) },
   });
-  return sendSuccess(res, { devOtp: code, expiresAt }, "OTP sent (dev)");
+  return sendSuccess(res, { ...devOtpPayload(code), expiresAt }, "OTP sent");
 }
 
 async function verifyEmailChangeOtp(req, res) {
@@ -305,7 +332,7 @@ async function requestPasswordResetOtp(req, res) {
   if (!email) {
     throw new ApiError(400, "Email is required");
   }
-  const staff = await Staff.findOne({ email: String(email).toLowerCase() });
+  const staff = await Staff.findOne({ email: normalizeEmail(email) });
   if (!staff || !staff.isActive) {
     // Avoid account enumeration
     return sendSuccess(res, { sent: true }, "If the account exists, OTP was sent");
@@ -322,14 +349,14 @@ async function requestPasswordResetOtp(req, res) {
   });
   return sendSuccess(
     res,
-    { sent: true, devOtp: code, expiresAt },
+    { sent: true, ...devOtpPayload(code), expiresAt },
     "If the account exists, OTP was sent"
   );
 }
 
 async function verifyPasswordResetOtp(req, res) {
   const { email, code } = req.body || {};
-  const staff = await Staff.findOne({ email: String(email || "").toLowerCase() });
+  const staff = await Staff.findOne({ email: normalizeEmail(email) });
   if (!staff) {
     throw new ApiError(400, "Invalid or expired OTP");
   }
@@ -351,7 +378,7 @@ async function confirmPasswordReset(req, res) {
   if (!newPassword || String(newPassword).length < 6) {
     throw new ApiError(400, "Password must be at least 6 characters");
   }
-  const staff = await Staff.findOne({ email: String(email || "").toLowerCase() });
+  const staff = await Staff.findOne({ email: normalizeEmail(email) });
   if (!staff) {
     throw new ApiError(400, "Verified OTP required");
   }
@@ -375,7 +402,7 @@ async function requestCustomerPasswordResetOtp(req, res) {
     throw new ApiError(400, "Email is required");
   }
   const customer = await Customer.findOne({
-    email: String(email).toLowerCase(),
+    email: normalizeEmail(email),
   });
   if (!customer) {
     return sendSuccess(res, { sent: true }, "If the account exists, OTP was sent");
@@ -395,7 +422,7 @@ async function requestCustomerPasswordResetOtp(req, res) {
   });
   return sendSuccess(
     res,
-    { sent: true, devOtp: code, expiresAt },
+    { sent: true, ...devOtpPayload(code), expiresAt },
     "If the account exists, OTP was sent"
   );
 }
@@ -403,7 +430,7 @@ async function requestCustomerPasswordResetOtp(req, res) {
 async function verifyCustomerPasswordResetOtp(req, res) {
   const { email, code } = req.body || {};
   const customer = await Customer.findOne({
-    email: String(email || "").toLowerCase(),
+    email: normalizeEmail(email),
   });
   if (!customer) {
     throw new ApiError(400, "Invalid or expired OTP");
@@ -427,7 +454,7 @@ async function confirmCustomerPasswordReset(req, res) {
     throw new ApiError(400, "Password must be at least 6 characters");
   }
   const customer = await Customer.findOne({
-    email: String(email || "").toLowerCase(),
+    email: normalizeEmail(email),
   });
   if (!customer) {
     throw new ApiError(400, "Verified OTP required");
