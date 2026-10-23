@@ -45,6 +45,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--outline); border: 3px solid var(--background); border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
+[data-slot="card-header"] + [data-slot="card-content"] {
+  padding-top: 0;
+}
+
 @media (max-width: 639px) {
   .admin-content h1 {
     font-size: 1.5rem !important;

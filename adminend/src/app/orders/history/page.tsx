@@ -2,11 +2,19 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { FiEye } from "react-icons/fi";
 import { AdminShell } from "@/components/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -41,6 +49,7 @@ export default function OrderHistoryPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -131,7 +140,42 @@ export default function OrderHistoryPage() {
           </Card>
         )}
 
-        <div className="overflow-x-auto rounded-2xl border border-[var(--outline-variant)] bg-[var(--surface)]">
+        <div className="space-y-3 sm:hidden">
+          {orders.map((order) => (
+            <Card key={order._id}>
+              <CardContent className="space-y-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-bold">{order.orderNumber}</p>
+                    <p className="mt-0.5 text-xs text-[var(--secondary)]">
+                      {new Date(order.createdAt).toLocaleString([], {
+                        day: "numeric",
+                        month: "short",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <Badge variant={order.status === "CANCELLED" ? "danger" : "success"}>
+                    {order.status}
+                  </Badge>
+                </div>
+                <div className="flex items-end justify-between gap-3 border-t border-[var(--outline-variant)] pt-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{order.customerName || "Guest"}</p>
+                    <p className="mt-0.5 text-xs capitalize text-[var(--secondary)]">{order.orderType}</p>
+                  </div>
+                  <p className="shrink-0 font-[family-name:var(--font-display)] text-lg font-extrabold">{formatBDT(order.total)}</p>
+                </div>
+                <Button variant="outline" className="w-full" onClick={() => setSelectedOrder(order)}>
+                  <FiEye className="h-4 w-4" /> View details
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto rounded-2xl border border-[var(--outline-variant)] bg-[var(--surface)] sm:block">
           <table className="w-full text-left text-sm">
             <thead className="text-[var(--secondary)]">
               <tr className="border-b">
@@ -201,6 +245,54 @@ export default function OrderHistoryPage() {
             </tbody>
           </table>
         </div>
+
+        <Dialog open={Boolean(selectedOrder)} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+          <DialogContent>
+            {selectedOrder && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-2 pr-8">
+                    <DialogTitle>{selectedOrder.orderNumber}</DialogTitle>
+                    <Badge variant={selectedOrder.status === "CANCELLED" ? "danger" : "success"}>
+                      {selectedOrder.status}
+                    </Badge>
+                  </div>
+                  <DialogDescription>
+                    {new Date(selectedOrder.createdAt).toLocaleString()}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid grid-cols-2 gap-3 rounded-xl bg-[var(--surface-container-low)] p-3 text-sm">
+                  <div><p className="text-xs text-[var(--secondary)]">Customer</p><p className="mt-1 font-semibold">{selectedOrder.customerName || "Guest"}</p></div>
+                  <div><p className="text-xs text-[var(--secondary)]">Phone</p><p className="mt-1 font-semibold">{selectedOrder.customerPhone || "—"}</p></div>
+                  <div><p className="text-xs text-[var(--secondary)]">Order type</p><p className="mt-1 font-semibold capitalize">{selectedOrder.orderType}</p></div>
+                  <div><p className="text-xs text-[var(--secondary)]">Payment</p><p className="mt-1 font-semibold capitalize">{selectedOrder.paymentStatus}</p></div>
+                </div>
+
+                {(selectedOrder.tableName || selectedOrder.address) && (
+                  <div className="text-sm"><p className="text-xs font-semibold uppercase tracking-wide text-[var(--secondary)]">Fulfilment</p><p className="mt-1">{selectedOrder.tableName ? `Table ${selectedOrder.tableName}` : selectedOrder.address}</p></div>
+                )}
+
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--secondary)]">Order items</p>
+                  <div className="divide-y divide-[var(--outline-variant)] rounded-xl border border-[var(--outline-variant)]">
+                    {selectedOrder.items.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between gap-4 px-3 py-2.5 text-sm">
+                        <span>{item.quantity}× {item.name}</span>
+                        <span className="shrink-0 font-semibold">{formatBDT(item.lineTotal)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-end justify-between border-t border-[var(--outline-variant)] pt-4">
+                  <span className="text-sm font-bold">Total</span>
+                  <span className="font-[family-name:var(--font-display)] text-2xl font-extrabold">{formatBDT(selectedOrder.total)}</span>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminShell>
   );
