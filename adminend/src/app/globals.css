@@ -65,12 +65,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
     gap: 1rem;
   }
 
-  .admin-content .p-8,
-  .admin-content .p-6,
-  .admin-content .p-5 {
-    padding: 1rem !important;
-  }
-
   .admin-content .max-w-xs,
   .admin-content .max-w-sm {
     width: 100%;

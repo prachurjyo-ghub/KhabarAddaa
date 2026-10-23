@@ -646,7 +646,7 @@ export default function FinancialsPage() {
                 <div className="space-y-3">
                   {vatRules.length === 0 && (
                     <Card>
-                      <CardContent className="p-6 text-sm text-[var(--secondary)]">
+                      <CardContent className="flex min-h-20 items-center justify-center p-4 text-center text-sm text-[var(--secondary)] sm:p-6">
                         No VAT rules yet.
                       </CardContent>
                     </Card>
@@ -823,7 +823,7 @@ export default function FinancialsPage() {
                 <div className="space-y-3">
                   {offers.length === 0 && (
                     <Card>
-                      <CardContent className="p-6 text-sm text-[var(--secondary)]">
+                      <CardContent className="flex min-h-20 items-center justify-center p-4 text-center text-sm text-[var(--secondary)] sm:p-6">
                         No offers yet.
                       </CardContent>
                     </Card>

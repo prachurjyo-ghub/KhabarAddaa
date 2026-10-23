@@ -164,7 +164,7 @@ export default function LiveOrdersPage() {
 
         {!loading && orders.length === 0 && (
           <Card>
-            <CardContent className="p-8 text-center text-sm text-[var(--secondary)]">
+            <CardContent className="flex min-h-20 items-center justify-center p-4 text-center text-sm text-[var(--secondary)] sm:p-8">
               No live orders right now.
             </CardContent>
           </Card>

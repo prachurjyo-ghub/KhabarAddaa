@@ -339,7 +339,7 @@ export default function TablesPage() {
             {canTables && (
               <TabsContent value="day" className="space-y-4">
                 <Card>
-                  <CardContent className="p-4 text-sm">
+                  <CardContent className="flex min-h-[72px] items-center p-4 text-sm">
                     {hours?.closed ? (
                       <p className="text-[var(--secondary)]">
                         Closed{hours.reason ? ` — ${hours.reason}` : ""}
@@ -364,7 +364,7 @@ export default function TablesPage() {
                     );
                     return (
                       <Card key={t._id}>
-                        <CardContent className="space-y-2 p-4">
+                        <CardContent className="flex min-h-28 flex-col justify-center space-y-2 p-4 sm:min-h-0">
                           <div className="flex items-center justify-between">
                             <h3 className="font-bold">{t.name}</h3>
                             <Badge
@@ -713,14 +713,14 @@ export default function TablesPage() {
                 <div className="space-y-3">
                   {allBookings.length === 0 && (
                     <Card>
-                      <CardContent className="p-6 text-sm text-[var(--secondary)]">
+                      <CardContent className="flex min-h-20 items-center justify-center p-4 text-sm text-[var(--secondary)] sm:p-6">
                         No bookings for {date}.
                       </CardContent>
                     </Card>
                   )}
                   {allBookings.map((b) => (
                     <Card key={b._id}>
-                      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                      <CardContent className="flex min-h-24 flex-col justify-center gap-3 p-4 sm:min-h-0 sm:flex-row sm:items-center">
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-bold">{b.customerName}</p>
