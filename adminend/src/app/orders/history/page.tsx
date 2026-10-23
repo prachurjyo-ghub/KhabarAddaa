@@ -131,7 +131,7 @@ export default function OrderHistoryPage() {
           </Card>
         )}
 
-        <div className="overflow-x-auto rounded-xl border border-[var(--outline-variant)] bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--outline-variant)] bg-[var(--surface)]">
           <table className="w-full text-left text-sm">
             <thead className="text-[var(--secondary)]">
               <tr className="border-b">

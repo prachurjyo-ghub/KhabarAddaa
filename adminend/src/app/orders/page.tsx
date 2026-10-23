@@ -1,13 +1,13 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
+import { FiPlus } from "react-icons/fi";
 import { AdminShell } from "@/components/admin-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -43,9 +43,6 @@ type Order = {
   createdAt: string;
 };
 
-type MenuItemOpt = { _id: string; name: string; price: number; status: string };
-type TableOpt = { _id: string; name: string; seats: number };
-
 const NEXT: Record<string, string | null> = {
   PENDING: "PREPARING",
   PREPARING: "READY",
@@ -65,18 +62,6 @@ export default function LiveOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("all");
   const [sort, setSort] = useState("newest");
-  const [menuItems, setMenuItems] = useState<MenuItemOpt[]>([]);
-  const [tables, setTables] = useState<TableOpt[]>([]);
-  const [showManual, setShowManual] = useState(false);
-  const [manual, setManual] = useState({
-    customerName: "Walk-in",
-    customerPhone: "",
-    orderType: "dine-in" as Order["orderType"],
-    tableId: "",
-    menuItemId: "",
-    quantity: "1",
-  });
-  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,17 +85,6 @@ export default function LiveOrdersPage() {
     const t = setInterval(() => void load(), 15000);
     return () => clearInterval(t);
   }, [load]);
-
-  useEffect(() => {
-    apiFetch<{ items: MenuItemOpt[] }>("/menu/public")
-      .then((d) =>
-        setMenuItems(d.items.filter((i) => i.status !== "Out of Stock"))
-      )
-      .catch(() => {});
-    apiFetch<{ tables: TableOpt[] }>("/orders/available-tables")
-      .then((d) => setTables(d.tables))
-      .catch(() => {});
-  }, []);
 
   async function setStatus(id: string, status: string) {
     try {
@@ -138,41 +112,6 @@ export default function LiveOrdersPage() {
     }
   }
 
-  async function createManual(e: FormEvent) {
-    e.preventDefault();
-    if (!manual.menuItemId) {
-      toast.error("Pick a menu item");
-      return;
-    }
-    setSaving(true);
-    try {
-      const table = tables.find((t) => t._id === manual.tableId);
-      await apiFetch("/orders/manual", {
-        method: "POST",
-        body: JSON.stringify({
-          customerName: manual.customerName,
-          customerPhone: manual.customerPhone,
-          orderType: manual.orderType,
-          tableId: manual.tableId || undefined,
-          tableName: table?.name || "",
-          items: [
-            {
-              menuItemId: manual.menuItemId,
-              quantity: Number(manual.quantity) || 1,
-            },
-          ],
-        }),
-      });
-      toast.success("Manual order created");
-      setShowManual(false);
-      await load();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Create failed");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <AdminShell>
       <div className="space-y-6">
@@ -185,8 +124,8 @@ export default function LiveOrdersPage() {
               Kitchen queue — refreshes every 15s.
             </p>
           </div>
-          <Button variant="secondary" onClick={() => setShowManual((v) => !v)}>
-            {showManual ? "Hide form" : "Manual order"}
+          <Button asChild className="hidden sm:inline-flex">
+            <Link href="/orders/manual"><FiPlus className="h-4 w-4" />New manual order</Link>
           </Button>
         </div>
 
@@ -215,114 +154,6 @@ export default function LiveOrdersPage() {
             Refresh
           </Button>
         </div>
-
-        {showManual && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Create manual / waiter order</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={createManual} className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label>Customer name</Label>
-                  <Input
-                    value={manual.customerName}
-                    onChange={(e) =>
-                      setManual({ ...manual, customerName: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Phone</Label>
-                  <Input
-                    value={manual.customerPhone}
-                    onChange={(e) =>
-                      setManual({ ...manual, customerPhone: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Type</Label>
-                  <Select
-                    value={manual.orderType}
-                    onValueChange={(v) =>
-                      setManual({
-                        ...manual,
-                        orderType: v as Order["orderType"],
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dine-in">Dine-in</SelectItem>
-                      <SelectItem value="takeaway">Takeaway</SelectItem>
-                      <SelectItem value="delivery">Delivery</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label>Table (optional)</Label>
-                  <Select
-                    value={manual.tableId || "none"}
-                    onValueChange={(v) =>
-                      setManual({ ...manual, tableId: v === "none" ? "" : v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Table" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No table</SelectItem>
-                      {tables.map((t) => (
-                        <SelectItem key={t._id} value={t._id}>
-                          {t.name} ({t.seats})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label>Menu item</Label>
-                  <Select
-                    value={manual.menuItemId || undefined}
-                    onValueChange={(v) =>
-                      setManual({ ...manual, menuItemId: v })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select item" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {menuItems.map((m) => (
-                        <SelectItem key={m._id} value={m._id}>
-                          {m.name} · {formatBDT(m.price)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label>Quantity</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={manual.quantity}
-                    onChange={(e) =>
-                      setManual({ ...manual, quantity: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Button type="submit" disabled={saving}>
-                    {saving ? "Creating…" : "Create order"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
 
         {loading && (
           <div className="space-y-3">
