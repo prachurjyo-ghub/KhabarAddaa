@@ -1,24 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f9fb;
-  --on-background: #191c1e;
-  --primary: #b1241a;
-  --primary-dark: #910807;
-  --primary-fixed: #ffdad5;
-  --on-primary: #ffffff;
-  --secondary: #565e74;
-  --on-surface-variant: #5a413d;
-  --outline: #8f6f6a;
-  --outline-variant: #e2beb9;
-  --surface-container-low: #f2f4f6;
-  --surface-container: #eceef0;
-  --surface-container-high: #e6e8ea;
-  --surface-container-highest: #e0e3e5;
-  --error: #ba1a1a;
-  --tertiary: #735c00;
-  --tertiary-container: #cea700;
-  --radius: 0.75rem;
+  color-scheme: light;
+  --background: #f4f6f6; --on-background: #06141b; --surface: #ffffff; --header: #f8f9f9;
+  --primary: #253745; --primary-dark: #11212d; --primary-fixed: #dfe4e4; --primary-soft: #e7eaea; --on-primary: #ffffff;
+  --accent: #9ba8ab; --accent-contrast: #06141b; --secondary: #4a5c6a; --on-surface-variant: #253745;
+  --outline: #9ba8ab; --outline-variant: #d7dcdd; --surface-container-low: #eef1f1; --surface-container: #e4e8e8; --surface-container-high: #d7dddd; --surface-container-highest: #ccd0cf;
+  --sidebar: #06141b; --sidebar-active: #253745; --sidebar-text: #ccd0cf; --sidebar-muted: #9ba8ab;
+  --error: #a94343; --success: #376c5b; --warning: #8a6728; --radius: 0.875rem;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #06141b; --on-background: #e9eded; --surface: #11212d; --header: #0a1921;
+  --primary: #9ba8ab; --primary-dark: #ccd0cf; --primary-fixed: #253745; --primary-soft: #1b2e3b; --on-primary: #06141b;
+  --accent: #ccd0cf; --accent-contrast: #06141b; --secondary: #9ba8ab; --on-surface-variant: #ccd0cf;
+  --outline: #4a5c6a; --outline-variant: #253745; --surface-container-low: #172936; --surface-container: #1c303e; --surface-container-high: #253745; --surface-container-highest: #4a5c6a;
+  --sidebar: #040f15; --sidebar-active: #253745; --sidebar-text: #ccd0cf; --sidebar-muted: #9ba8ab;
+  --error: #e18989; --success: #83bfa9; --warning: #d8b36a;
 }
 
 @theme inline {
@@ -36,6 +35,59 @@ body {
   background: var(--background);
   color: var(--on-background);
   font-family: var(--font-body), system-ui, sans-serif;
+}
+
+html { background: var(--background); }
+body, button, input, textarea, select { transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease; }
+button, a { -webkit-tap-highlight-color: transparent; }
+*:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--outline); border: 3px solid var(--background); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@media (max-width: 639px) {
+  .admin-content h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.85rem !important;
+    letter-spacing: -0.025em;
+  }
+
+  .admin-content h2 {
+    line-height: 1.35rem;
+  }
+
+  .admin-content > div.space-y-6 > :not(:last-child),
+  .admin-content .space-y-6 > :not(:last-child) {
+    margin-block-end: 1rem;
+  }
+
+  .admin-content .gap-6 {
+    gap: 1rem;
+  }
+
+  .admin-content .max-w-xs,
+  .admin-content .max-w-sm {
+    width: 100%;
+    max-width: none;
+  }
+
+  .admin-content .w-48,
+  .admin-content .w-44,
+  .admin-content .w-40,
+  .admin-content .w-36 {
+    width: calc(50% - 0.375rem);
+    min-width: 8rem;
+    flex: 1 1 calc(50% - 0.375rem);
+  }
+
+  .admin-content table {
+    font-size: 0.75rem;
+  }
+
+  .admin-content th,
+  .admin-content td {
+    white-space: nowrap;
+  }
 }
 
 ::selection {

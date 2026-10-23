@@ -244,14 +244,14 @@ export default function InventoryPage() {
             )}
             {!loading && items.length === 0 && (
               <Card>
-                <CardContent className="p-8 text-center text-sm text-[var(--secondary)]">
+                <CardContent className="flex min-h-20 items-center justify-center p-4 text-center text-sm text-[var(--secondary)] sm:p-8">
                   No inventory items yet.
                 </CardContent>
               </Card>
             )}
             {items.map((item) => (
               <Card key={item._id}>
-                <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                <CardContent className="flex min-h-24 flex-col justify-center gap-3 p-4 sm:min-h-0 sm:flex-row sm:items-center">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-bold">{item.name}</h3>
@@ -267,7 +267,7 @@ export default function InventoryPage() {
                         {item.status}
                       </Badge>
                     </div>
-                    <p className="text-sm text-[var(--secondary)]">
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--secondary)] sm:mt-0">
                       {item.category} · {item.quantity} {item.unit}
                       {item.lastRestocked
                         ? ` · Restocked ${new Date(item.lastRestocked).toLocaleDateString()}`

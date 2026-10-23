@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(circle at 15% 20%, #ffdad5 0%, transparent 42%), radial-gradient(circle at 85% 75%, #ffe083 0%, transparent 38%)",
+            "radial-gradient(circle at 15% 20%, color-mix(in srgb, #9BA8AB 38%, transparent) 0%, transparent 42%), radial-gradient(circle at 85% 75%, color-mix(in srgb, #4A5C6A 28%, transparent) 0%, transparent 38%)",
         }}
       />
       <Card className="relative w-full max-w-md shadow-xl">
@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--primary)]">
             KhabarAdda
           </p>
-          <CardTitle className="text-3xl font-extrabold">Staff Login</CardTitle>
+          <CardTitle className="text-3xl font-extrabold">Staff login</CardTitle>
           <CardDescription>
             Sign in to manage menu, orders, and reservations.
           </CardDescription>

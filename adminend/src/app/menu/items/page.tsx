@@ -836,14 +836,14 @@ export default function MenuItemsPage() {
             )}
             {!loading && items.length === 0 && (
               <Card>
-                <CardContent className="p-8 text-center text-sm text-[var(--secondary)]">
+                <CardContent className="flex min-h-20 items-center justify-center p-4 text-center text-sm text-[var(--secondary)] sm:p-8">
                   No menu items yet. Add your first dish.
                 </CardContent>
               </Card>
             )}
             {!loading && items.length > 0 && filteredItems.length === 0 && (
               <Card>
-                <CardContent className="p-8 text-center text-sm text-[var(--secondary)]">
+                <CardContent className="flex min-h-20 items-center justify-center p-4 text-center text-sm text-[var(--secondary)] sm:p-8">
                   No items match these filters.
                 </CardContent>
               </Card>
@@ -851,7 +851,7 @@ export default function MenuItemsPage() {
             {!loading &&
               filteredItems.map((item) => (
                 <Card key={item._id}>
-                  <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                  <CardContent className="flex min-h-24 flex-col justify-center gap-3 p-4 sm:min-h-0 sm:flex-row sm:items-center">
                     <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[var(--surface-container)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
